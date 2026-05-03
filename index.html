@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0e0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Energie Inzicht</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e0f;
+  --surface: #111618;
+  --surface2: #161d1f;
+  --surface3: #1a2326;
+  --border: #1e2a2d;
+  --border2: #243438;
+  --solar: #f0c93a;
+  --solar-dim: rgba(240,201,58,0.12);
+  --solar-glow: rgba(240,201,58,0.06);
+  --grid: #3ab8f0;
+  --grid-dim: rgba(58,184,240,0.12);
+  --battery: #5cf0a0;
+  --battery-dim: rgba(92,240,160,0.12);
+  --return: #f07a3a;
+  --return-dim: rgba(240,122,58,0.12);
+  --text: #e8eced;
+  --text-dim: #6b8085;
+  --text-mid: #9fb4b8;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── HEADER ─── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(10,14,15,0.95);
+  backdrop-filter: blur(12px);
+  z-index: 200;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--solar);
+  white-space: nowrap;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+}
+
+.month-nav button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.month-nav button:hover { border-color: var(--solar); color: var(--solar); }
+
+.month-label {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 14px;
+  min-width: 90px;
+  text-align: center;
+}
+
+.header-actions { display: flex; gap: 8px; }
+
+.btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--solar-dim);
+  border-color: rgba(240,201,58,0.3);
+  color: var(--solar);
+}
+.btn-primary:hover { background: rgba(240,201,58,0.2); }
+
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-mid);
+}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+/* ─── NAV TABS ─── */
+.nav-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  background: var(--bg);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.nav-tab {
+  padding: 12px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: 'Syne', sans-serif;
+}
+.nav-tab:hover { color: var(--text-mid); }
+.nav-tab.active { color: var(--solar); border-bottom-color: var(--solar); }
+
+/* ─── MAIN ─── */
+.main { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+
+/* ─── VIEWS ─── */
+.view { display: none; flex-direction: column; gap: 16px; }
+.view.active { display: flex; }
+
+/* ─── STATUS BAR ─── */
+.status-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; }
+.status-dot.ok { background: var(--battery); }
+.status-dot.warn { background: var(--solar); }
+.status-dot.miss { background: var(--text-dim); }
+
+/* ─── KPI GRID ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s;
+}
+.kpi:hover { transform: translateY(-1px); }
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.kpi.solar::before { background: var(--solar); }
+.kpi.grid::before { background: var(--grid); }
+.kpi.battery::before { background: var(--battery); }
+.kpi.returned::before { background: var(--return); }
+
+.kpi-icon { font-size: 16px; margin-bottom: 10px; }
+.kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  font-family: 'DM Mono', monospace;
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.kpi.solar .kpi-value { color: var(--solar); }
+.kpi.grid .kpi-value { color: var(--grid); }
+.kpi.battery .kpi-value { color: var(--battery); }
+.kpi.returned .kpi-value { color: var(--return); }
+
+.kpi-unit { font-size: 12px; font-weight: 400; color: var(--text-dim); margin-left: 2px; }
+.kpi-sub { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 4px; }
+
+/* ─── EIGEN VERBRUIK ─── */
+.eigen-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+
+.eigen-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.eigen-title-block { display: flex; flex-direction: column; gap: 3px; }
+.card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+}
+.card-title { font-size: 16px; font-weight: 700; }
+
+.eigen-formula {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ef-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ef-val { font-size: 16px; font-weight: 700; font-family: 'DM Mono', monospace; }
+.ef-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'DM Mono', monospace; }
+.ef-op { font-size: 18px; color: var(--border2); font-weight: 300; }
+
+.eigen-progress-block { flex: 1; min-width: 200px; max-width: 300px; }
+.progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.progress-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+.progress-pct { font-size: 28px; font-weight: 800; color: var(--solar); font-family: 'DM Mono', monospace; }
+
+.progress-track {
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--solar), var(--battery));
+  transition: width 0.6s ease;
+}
+
+/* ─── CHART CARDS ─── */
+.charts-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px) { .charts-2col { grid-template-columns: 1fr; } }
+
+.charts-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 900px) { .charts-3col { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+}
+.legend-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── BAR CHARTS (SVG-based) ─── */
+.chart-svg { width: 100%; overflow: visible; }
+
+/* ─── TERUGVERDIEN CARD ─── */
+.tv-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.tv-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.tv-invested { display: flex; flex-direction: column; gap: 3px; }
+.tv-invested-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; }
+.tv-invested-val { font-size: 22px; font-weight: 800; color: var(--text); font-family: 'DM Mono', monospace; }
+.tv-invested-sub { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+.tv-countdown { text-align: right; }
+.tv-countdown-big { font-size: 28px; font-weight: 800; color: var(--battery); font-family: 'DM Mono', monospace; }
+.tv-countdown-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+.tv-track {
+  height: 10px;
+  background: var(--surface2);
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.tv-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--battery), var(--solar));
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.tv-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+}
+
+.tv-breakdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.tv-item { display: flex; flex-direction: column; gap: 2px; }
+.tv-item-label { font-size: 9px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+.tv-item-val { font-size: 14px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+/* ─── FIN CARD ─── */
+.fin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.fin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.fin-row:last-child { border-bottom: none; }
+.fin-row.total { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--solar); border-bottom: none; }
+
+.fin-label { font-size: 12px; color: var(--text-mid); font-family: 'DM Mono', monospace; }
+.fin-val { font-size: 13px; font-weight: 700; font-family: 'DM Mono', monospace; }
+.fin-val.pos { color: var(--battery); }
+.fin-val.neg { color: var(--return); }
+.fin-val.total { font-size: 18px; color: var(--battery); }
+
+/* ─── PROJECTIE CARD ─── */
+.proj-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.proj-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.proj-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.proj-label { font-size: 9px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+.proj-val { font-size: 18px; font-weight: 800; font-family: 'DM Mono', monospace; }
+.proj-sub { font-size: 9px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+/* ─── IMPORT VIEW ─── */
+.import-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px) { .import-grid { grid-template-columns: 1fr; } }
+
+.import-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.import-card-header { display: flex; flex-direction: column; gap: 3px; }
+.import-card-title { font-size: 15px; font-weight: 700; }
+.import-card-sub { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+.dropzone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+}
+.dropzone:hover, .dropzone.drag { border-color: var(--solar); background: var(--solar-glow); }
+.dropzone-icon { font-size: 28px; margin-bottom: 8px; }
+.dropzone-label { font-size: 12px; color: var(--text-mid); font-family: 'DM Mono', monospace; }
+.dropzone-sub { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; margin-top: 4px; }
+.dropzone input[type=file] { display: none; }
+
+.import-result {
+  background: var(--battery-dim);
+  border: 1px solid rgba(92,240,160,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--battery);
+  display: none;
+}
+
+.field-group { display: flex; flex-direction: column; gap: 8px; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field label {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.field input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.field input:focus { border-color: var(--solar); }
+
+.import-card .btn { align-self: flex-start; }
+
+/* ─── INSTELLINGEN VIEW ─── */
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.settings-note {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
+  z-index: 999;
+  transition: transform 0.3s ease;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-size: 14px; margin-bottom: 6px; color: var(--text-mid); }
+.empty-sub { font-size: 11px; line-height: 1.6; }
+
+/* ─── BATTERIJ RENDEMENT ─── */
+.rendement-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.rendement-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; min-width: 60px; }
+.rendement-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 99px; border: 1px solid var(--border); overflow: hidden; }
+.rendement-fill { height: 100%; border-radius: 99px; background: var(--battery); transition: width 0.5s ease; }
+.rendement-pct { font-size: 13px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--battery); min-width: 40px; text-align: right; }
+
+/* ─── SEIZOEN ─── */
+.seizoen-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+  margin-top: 10px;
+}
+.seizoen-month {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.seizoen-bar-wrap {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.seizoen-bar {
+  width: 70%;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: opacity 0.2s;
+}
+.seizoen-bar.has-data { background: var(--solar); }
+.seizoen-bar.projected { background: var(--solar); opacity: 0.3; border: 1px dashed rgba(240,201,58,0.5); }
+.seizoen-bar.no-data { background: var(--surface3); }
+.seizoen-name { font-size: 8px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">⚡ Energie</div>
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <div class="month-label" id="month-label">—</div>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="showView('import')">↑ Import</button>
+    <button class="btn btn-ghost" onclick="showView('instellingen')">⚙</button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showView('dashboard')" data-view="dashboard">Dashboard</button>
+  <button class="nav-tab" onclick="showView('grafieken')" data-view="grafieken">Grafieken</button>
+  <button class="nav-tab" onclick="showView('financieel')" data-view="financieel">Financieel</button>
+  <button class="nav-tab" onclick="showView('import')" data-view="import">Importeer</button>
+  <button class="nav-tab" onclick="showView('instellingen')" data-view="instellingen">Instellingen</button>
+</div>
+
+<div class="main">
+
+  <!-- ══════════════════════════════════════════
+       DASHBOARD VIEW
+  ══════════════════════════════════════════ -->
+  <div class="view active" id="view-dashboard">
+
+    <div class="status-bar" id="status-bar">
+      <div class="status-dot miss" id="status-dot"></div>
+      <span id="status-text">Geen data voor deze maand — ga naar Importeer om data toe te voegen.</span>
+    </div>
+
+    <!-- KPI GRID -->
+    <div class="kpi-grid">
+      <div class="kpi solar">
+        <div class="kpi-icon">☀️</div>
+        <div class="kpi-label">Opwek panelen</div>
+        <div class="kpi-value" id="kpi-opwek">—<span class="kpi-unit"></span></div>
+        <div class="kpi-sub">Hoymiles</div>
+      </div>
+      <div class="kpi grid">
+        <div class="kpi-icon">🔌</div>
+        <div class="kpi-label">Inkoop van net</div>
+        <div class="kpi-value" id="kpi-inkoop">—<span class="kpi-unit"></span></div>
+        <div class="kpi-sub">HomeWizard P1</div>
+      </div>
+      <div class="kpi battery">
+        <div class="kpi-icon">🔋</div>
+        <div class="kpi-label">Batterij ontladen</div>
+        <div class="kpi-value" id="kpi-ontladen">—<span class="kpi-unit"></span></div>
+        <div class="kpi-sub">Marstek</div>
+      </div>
+      <div class="kpi returned">
+        <div class="kpi-icon">↩️</div>
+        <div class="kpi-label">Teruglevering</div>
+        <div class="kpi-value" id="kpi-terug">—<span class="kpi-unit"></span></div>
+        <div class="kpi-sub">HomeWizard P1</div>
+      </div>
+    </div>
+
+    <!-- EIGEN VERBRUIK -->
+    <div class="eigen-card">
+      <div class="eigen-top">
+        <div class="eigen-title-block">
+          <div class="card-label">Eigen verbruik</div>
+          <div class="card-title">Totaal huishoudverbruik</div>
+        </div>
+        <div class="eigen-formula">
+          <div class="ef-item">
+            <div class="ef-val" style="color:var(--grid)" id="ef-net">— kWh</div>
+            <div class="ef-lbl">Van net</div>
+          </div>
+          <div class="ef-op">+</div>
+          <div class="ef-item">
+            <div class="ef-val" style="color:var(--solar)" id="ef-direct">— kWh</div>
+            <div class="ef-lbl">Direct zon</div>
+          </div>
+          <div class="ef-op">+</div>
+          <div class="ef-item">
+            <div class="ef-val" style="color:var(--battery)" id="ef-bat">— kWh</div>
+            <div class="ef-lbl">Batterij</div>
+          </div>
+          <div class="ef-op">=</div>
+          <div class="ef-item">
+            <div class="ef-val" style="color:var(--text)" id="ef-total">— kWh</div>
+            <div class="ef-lbl">Totaal</div>
+          </div>
+        </div>
+        <div class="eigen-progress-block">
+          <div class="progress-header">
+            <div class="progress-label">% eigen verbruik van opwek</div>
+            <div class="progress-pct" id="eigen-pct">—%</div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="eigen-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BATTERIJ RENDEMENT -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="card-label">Batterij rendement</div>
+      </div>
+      <div class="rendement-bar">
+        <div class="rendement-label">Geladen</div>
+        <div class="rendement-track" style="flex:none;width:80px">
+          <div class="rendement-fill" id="bat-geladen-bar" style="width:0%"></div>
+        </div>
+        <div class="rendement-pct" id="bat-geladen-val">— kWh</div>
+      </div>
+      <div class="rendement-bar">
+        <div class="rendement-label">Ontladen</div>
+        <div class="rendement-track" style="flex:none;width:80px">
+          <div class="rendement-fill" id="bat-ontladen-bar" style="width:0%;background:var(--solar)"></div>
+        </div>
+        <div class="rendement-pct" id="bat-ontladen-val">— kWh</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text-mid)">
+        Rendement: <span id="bat-rendement" style="color:var(--battery);font-weight:700">—%</span>
+        <span style="color:var(--text-dim);font-size:10px;margin-left:8px">(ontladen ÷ geladen × 100)</span>
+      </div>
+    </div>
+
+    <!-- TERUGVERDIENTIJD -->
+    <div class="tv-card">
+      <div class="tv-top">
+        <div class="tv-invested">
+          <div class="tv-invested-label">Totale investering</div>
+          <div class="tv-invested-val" id="tv-investering">€ —</div>
+          <div class="tv-invested-sub" id="tv-breakdown-sub">Panelen + batterij</div>
+        </div>
+        <div class="tv-countdown">
+          <div class="tv-countdown-big" id="tv-terugverdiend">€ —</div>
+          <div class="tv-countdown-label">al terugverdiend</div>
+        </div>
+      </div>
+      <div class="tv-track">
+        <div class="tv-fill" id="tv-fill" style="width:0%"></div>
+      </div>
+      <div class="tv-stats">
+        <span id="tv-pct-label">0% terugverdiend</span>
+        <span id="tv-jaren-label">Resterende tijd: —</span>
+      </div>
+      <div class="tv-breakdown">
+        <div class="tv-item">
+          <div class="tv-item-label">Gem. besparing/maand</div>
+          <div class="tv-item-val" id="tv-gem-maand" style="color:var(--battery)">€ —</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Maanden data</div>
+          <div class="tv-item-val" id="tv-maanden-data" style="color:var(--text)">—</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Break-even jaar</div>
+          <div class="tv-item-val" id="tv-breakeven" style="color:var(--solar)">—</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Projectie dit jaar</div>
+          <div class="tv-item-val" id="tv-proj-jaar" style="color:var(--text)">€ —</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       GRAFIEKEN VIEW
+  ══════════════════════════════════════════ -->
+  <div class="view" id="view-grafieken">
+
+    <!-- OPWEK VS INKOOP VS TERUGLEVERING -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="card-label">Opwek · Inkoop · Teruglevering per maand</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--solar)"></div>Opwek</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--grid)"></div>Inkoop</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--return)"></div>Teruglevering</div>
+        </div>
+      </div>
+      <svg class="chart-svg" id="chart-energie" height="160"></svg>
+      <div id="chart-energie-labels" style="display:flex;gap:4px;margin-top:4px"></div>
+    </div>
+
+    <!-- EIGEN VERBRUIK % TREND -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="card-label">Eigen verbruik % — trend</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--solar)"></div>% eigen verbruik</div>
+        </div>
+      </div>
+      <svg class="chart-svg" id="chart-eigen" height="120"></svg>
+    </div>
+
+    <!-- BATTERIJ GELADEN VS ONTLADEN -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="card-label">Batterij — geladen vs ontladen</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--battery)"></div>Geladen</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--solar)"></div>Ontladen</div>
+        </div>
+      </div>
+      <svg class="chart-svg" id="chart-batterij" height="140"></svg>
+    </div>
+
+    <!-- FINANCIEEL CUMULATIEF -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="card-label">Financiële besparing — cumulatief</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--battery)"></div>Cumulatief voordeel</div>
+        </div>
+      </div>
+      <svg class="chart-svg" id="chart-financieel" height="120"></svg>
+    </div>
+
+    <!-- SEIZOENSPATROON -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="card-label">Seizoenspatroon — opwek per maand</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--solar)"></div>Werkelijk</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--solar);opacity:0.35"></div>Projectie</div>
+        </div>
+      </div>
+      <div class="seizoen-grid" id="seizoen-grid"></div>
+    </div>
+
+    <!-- JAARPROJEKTIE -->
+    <div class="proj-card">
+      <div class="card-label">Projectie op jaarbasis</div>
+      <div class="proj-grid" id="proj-grid">
+        <div class="proj-item">
+          <div class="proj-label">Opwek (jaar)</div>
+          <div class="proj-val" id="proj-opwek" style="color:var(--solar)">— kWh</div>
+          <div class="proj-sub" id="proj-opwek-sub">op basis van — maanden</div>
+        </div>
+        <div class="proj-item">
+          <div class="proj-label">Inkoop (jaar)</div>
+          <div class="proj-val" id="proj-inkoop" style="color:var(--grid)">— kWh</div>
+          <div class="proj-sub">geschatte jaarvraag</div>
+        </div>
+        <div class="proj-item">
+          <div class="proj-label">Besparing (jaar)</div>
+          <div class="proj-val" id="proj-besparing" style="color:var(--battery)">€ —</div>
+          <div class="proj-sub">financieel voordeel</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       FINANCIEEL VIEW
+  ══════════════════════════════════════════ -->
+  <div class="view" id="view-financieel">
+
+    <div class="charts-2col">
+      <div class="fin-card">
+        <div class="card-label" style="margin-bottom:14px">Maandoverzicht · <span id="fin-maand-label">—</span></div>
+        <div class="fin-row">
+          <div class="fin-label">Betaald aan net (ANWB)</div>
+          <div class="fin-val neg" id="fin-betaald">— €</div>
+        </div>
+        <div class="fin-row">
+          <div class="fin-label">Ontvangen teruglevering</div>
+          <div class="fin-val pos" id="fin-ontvangen">— €</div>
+        </div>
+        <div class="fin-row">
+          <div class="fin-label">Bespaard direct zonverbruik</div>
+          <div class="fin-val pos" id="fin-bespaard-direct">— €</div>
+        </div>
+        <div class="fin-row">
+          <div class="fin-label">Bespaard via batterij</div>
+          <div class="fin-val pos" id="fin-bespaard-bat">— €</div>
+        </div>
+        <div class="fin-row total">
+          <div class="fin-label" style="color:var(--text);font-weight:700">Netto voordeel</div>
+          <div class="fin-val total" id="fin-netto">€ —</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="card-label" style="margin-bottom:14px">Cumulatief voordeel over alle maanden</div>
+        <svg class="chart-svg" id="chart-fin-detail" height="180"></svg>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-section-title">Toelichting berekening</div>
+      <div class="settings-note">
+        Bespaard direct zonverbruik = directe eigen verbruik (opwek − teruglevering − batterijlading) × gemiddeld inkoop-tarief.<br><br>
+        Bespaard via batterij = ontladen kWh × gemiddeld inkoop-tarief.<br><br>
+        Gemiddeld inkoop-tarief wordt berekend als: betaald ÷ ingekochte kWh van het net. Als ANWB-bedragen ontbreken, wordt dit veld niet getoond.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       IMPORT VIEW
+  ══════════════════════════════════════════ -->
+  <div class="view" id="view-import">
+
+    <div style="font-size:12px;color:var(--text-dim);font-family:'DM Mono',monospace;padding:4px 0">
+      Importeer data voor: <strong style="color:var(--text)" id="import-maand-label">—</strong>
+    </div>
+
+    <div class="import-grid">
+
+      <!-- HOMEWIZARD -->
+      <div class="import-card">
+        <div class="import-card-header">
+          <div class="import-card-title">🔌 HomeWizard P1</div>
+          <div class="import-card-sub">CSV export · import T1/T2 + export T1/T2</div>
+        </div>
+        <div class="dropzone" id="dz-hw" onclick="document.getElementById('file-hw').click()">
+          <div class="dropzone-icon">📁</div>
+          <div class="dropzone-label">Sleep CSV hier of klik</div>
+          <div class="dropzone-sub">HomeWizard app → Instellingen → Grafieken → P1 → Exporteer</div>
+          <input type="file" id="file-hw" accept=".csv" onchange="handleHWFile(this)">
+        </div>
+        <div class="import-result" id="hw-result"></div>
+      </div>
+
+      <!-- HOYMILES -->
+      <div class="import-card">
+        <div class="import-card-header">
+          <div class="import-card-title">☀️ Hoymiles S-Miles</div>
+          <div class="import-card-sub">CSV export · maandelijkse opwek</div>
+        </div>
+        <div class="dropzone" id="dz-hm" onclick="document.getElementById('file-hm').click()">
+          <div class="dropzone-icon">📁</div>
+          <div class="dropzone-label">Sleep CSV hier of klik</div>
+          <div class="dropzone-sub">global.hoymiles.com → Rapport → Maand → Download CSV</div>
+          <input type="file" id="file-hm" accept=".csv" onchange="handleHMFile(this)">
+        </div>
+        <div class="import-result" id="hm-result"></div>
+      </div>
+
+      <!-- MARSTEK -->
+      <div class="import-card">
+        <div class="import-card-header">
+          <div class="import-card-title">🔋 Marstek batterij</div>
+          <div class="import-card-sub">Handmatig invoeren uit app screenshot</div>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label>Maandelijkse laadcapaciteit (kWh)</label>
+            <input type="number" step="0.01" id="marstek-geladen" placeholder="bijv. 68.4">
+          </div>
+          <div class="field">
+            <label>Maandelijks ontlaad vermogen (kWh)</label>
+            <input type="number" step="0.01" id="marstek-ontladen" placeholder="bijv. 54.2">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveMarstek()">Opslaan</button>
+        <div class="import-result" id="marstek-result"></div>
+      </div>
+
+      <!-- ANWB -->
+      <div class="import-card">
+        <div class="import-card-header">
+          <div class="import-card-title">⚡ ANWB Energie</div>
+          <div class="import-card-sub">Bedragen van maandafrekening</div>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label>Betaald aan net deze maand (€)</label>
+            <input type="number" step="0.01" id="anwb-betaald" placeholder="bijv. 23.18">
+          </div>
+          <div class="field">
+            <label>Ontvangen voor teruglevering (€)</label>
+            <input type="number" step="0.01" id="anwb-ontvangen" placeholder="bijv. 9.42">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveANWB()">Opslaan</button>
+        <div class="import-result" id="anwb-result"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       INSTELLINGEN VIEW
+  ══════════════════════════════════════════ -->
+  <div class="view" id="view-instellingen">
+
+    <div class="settings-card">
+      <div class="settings-section-title">Investering</div>
+      <div class="settings-row">
+        <div class="field">
+          <label>Aanschafprijs panelen (€)</label>
+          <input type="number" step="1" id="set-panelen" placeholder="bijv. 4500">
+        </div>
+        <div class="field">
+          <label>Aanschafprijs batterij (€)</label>
+          <input type="number" step="1" id="set-batterij" placeholder="bijv. 2800">
+        </div>
+      </div>
+      <div class="settings-note">
+        Pas de aanschafprijs aan als je een subsidie of teruggave ontvangt. De terugverdientijd wordt automatisch herberekend.
+      </div>
+      <button class="btn btn-primary" onclick="saveInstellingen()">Opslaan</button>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-section-title">Data beheer</div>
+      <div class="settings-note">
+        Alle data wordt lokaal opgeslagen in je browser (localStorage). Data synchroniseert niet automatisch tussen apparaten. Gebruik de import-knoppen om data opnieuw in te laden op een ander apparaat.
+      </div>
+      <button class="btn btn-ghost" onclick="exportData()" style="align-self:flex-start;margin-top:4px">↓ Exporteer alle data (JSON)</button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE & STORAGE
+// ═══════════════════════════════════════════════════════
+
+const STORAGE_KEY = 'energie_inzicht_v1';
+
+function loadState() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { months: {}, settings: {} };
+  } catch { return { months: {}, settings: {} }; }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+// Current month: YYYY-MM string
+const now = new Date();
+let currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+function getMonthData(ym) {
+  return state.months[ym] || {};
+}
+
+function setMonthData(ym, partial) {
+  state.months[ym] = { ...getMonthData(ym), ...partial };
+  saveState();
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === name);
+  });
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'grafieken') renderGrafieken();
+  if (name === 'financieel') renderFinancieel();
+  if (name === 'import') renderImportView();
+  if (name === 'instellingen') renderInstellingen();
+}
+
+function changeMonth(delta) {
+  const [y, m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  currentMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  updateMonthLabel();
+  renderCurrentView();
+}
+
+function updateMonthLabel() {
+  const [y, m] = currentMonth.split('-').map(Number);
+  const names = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  document.getElementById('month-label').textContent = `${names[m-1]} ${y}`;
+  document.getElementById('import-maand-label').textContent = `${names[m-1]} ${y}`;
+  document.getElementById('fin-maand-label').textContent = `${names[m-1]} ${y}`;
+}
+
+function renderCurrentView() {
+  const active = document.querySelector('.view.active');
+  if (!active) return;
+  const id = active.id.replace('view-', '');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'grafieken') renderGrafieken();
+  if (id === 'financieel') renderFinancieel();
+  if (id === 'import') renderImportView();
+}
+
+// ═══════════════════════════════════════════════════════
+// CSV PARSERS
+// ═══════════════════════════════════════════════════════
+
+// HomeWizard: cumulatieve dagstanden, we berekenen verschil begin→eind van geselecteerde maand
+function parseHomeWizard(text, targetYM) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('Bestand te kort');
+
+  const header = lines[0].split(',').map(s => s.trim().replace(/^"|"$/g,''));
+  const iTime = header.findIndex(h => h.toLowerCase() === 'time');
+  const iIT1  = header.findIndex(h => h.toLowerCase().includes('import t1'));
+  const iIT2  = header.findIndex(h => h.toLowerCase().includes('import t2'));
+  const iET1  = header.findIndex(h => h.toLowerCase().includes('export t1'));
+  const iET2  = header.findIndex(h => h.toLowerCase().includes('export t2'));
+
+  if ([iTime,iIT1,iIT2,iET1,iET2].some(i => i < 0))
+    throw new Error('Kolommen niet herkend. Verwacht: time, Import T1, Import T2, Export T1, Export T2');
+
+  function parseRow(line) {
+    const cols = line.split(',').map(s => s.trim().replace(/^"|"$/g,''));
+    return {
+      time: cols[iTime],
+      it1: parseFloat(cols[iIT1]) || 0,
+      it2: parseFloat(cols[iIT2]) || 0,
+      et1: parseFloat(cols[iET1]) || 0,
+      et2: parseFloat(cols[iET2]) || 0,
+    };
+  }
+
+  const [ty, tm] = targetYM.split('-').map(Number);
+
+  // Find rows for the target month
+  const monthRows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseRow(lines[i]);
+    if (!row.time) continue;
+    const rowDate = new Date(row.time.replace(' ', 'T'));
+    if (rowDate.getFullYear() === ty && rowDate.getMonth() + 1 === tm) {
+      monthRows.push(row);
+    }
+  }
+
+  if (monthRows.length === 0) throw new Error(`Geen data gevonden voor ${targetYM} in dit bestand`);
+
+  // Also look for previous month last row for delta
+  // The file has daily cumulative values. Row for day D shows cumulative UP TO that day.
+  // So inkoop for month = last row of month - last row of prev month
+  // Find last row before target month
+  let prevRow = null;
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseRow(lines[i]);
+    if (!row.time) continue;
+    const rowDate = new Date(row.time.replace(' ', 'T'));
+    const rowYM = `${rowDate.getFullYear()}-${String(rowDate.getMonth()+1).padStart(2,'0')}`;
+    if (rowYM < targetYM) prevRow = row;
+    else break;
+  }
+
+  const firstRow = monthRows[0];
+  const lastRow  = monthRows[monthRows.length - 1];
+  const baseRow  = prevRow || firstRow; // fallback: delta within month
+
+  const startIT1 = prevRow ? prevRow.it1 : firstRow.it1;
+  const startIT2 = prevRow ? prevRow.it2 : firstRow.it2;
+  const startET1 = prevRow ? prevRow.et1 : firstRow.et1;
+  const startET2 = prevRow ? prevRow.et2 : firstRow.et2;
+
+  const inkoop    = Math.max(0, (lastRow.it1 - startIT1) + (lastRow.it2 - startIT2));
+  const teruglevering = Math.max(0, (lastRow.et1 - startET1) + (lastRow.et2 - startET2));
+
+  return { inkoop: round2(inkoop), teruglevering: round2(teruglevering) };
+}
+
+// Hoymiles: maandtotalen direct uit CSV
+function parseHoymiles(text, targetYM) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('Bestand te kort');
+
+  const header = lines[0].replace(/^\uFEFF/, '').split(',').map(s => s.trim().replace(/^"|"$/g,''));
+  const iMonth = header.findIndex(h => h.toLowerCase() === 'month');
+  const iProd  = header.findIndex(h => h.toLowerCase().includes('production'));
+
+  if (iMonth < 0 || iProd < 0)
+    throw new Error('Kolommen niet herkend. Verwacht: Month, Production (kWh)');
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g,''));
+    const month = cols[iMonth];
+    const prod  = parseFloat(cols[iProd]);
+    if (month === targetYM && !isNaN(prod)) {
+      return { opwek: round2(prod) };
+    }
+  }
+
+  throw new Error(`Maand ${targetYM} niet gevonden in dit Hoymiles-bestand`);
+}
+
+// ═══════════════════════════════════════════════════════
+// FILE HANDLERS
+// ═══════════════════════════════════════════════════════
+
+function handleHWFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const result = parseHomeWizard(e.target.result, currentMonth);
+      setMonthData(currentMonth, { hw: result });
+      showResult('hw-result', `✓ Inkoop: ${result.inkoop} kWh · Teruglevering: ${result.teruglevering} kWh`);
+      toast('HomeWizard data opgeslagen');
+    } catch(err) {
+      showResult('hw-result', '✗ ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handleHMFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const result = parseHoymiles(e.target.result, currentMonth);
+      setMonthData(currentMonth, { hm: result });
+      showResult('hm-result', `✓ Opwek: ${result.opwek} kWh`);
+      toast('Hoymiles data opgeslagen');
+    } catch(err) {
+      showResult('hm-result', '✗ ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function saveMarstek() {
+  const geladen  = parseFloat(document.getElementById('marstek-geladen').value);
+  const ontladen = parseFloat(document.getElementById('marstek-ontladen').value);
+  if (isNaN(geladen) || isNaN(ontladen)) { toast('Vul beide velden in'); return; }
+  setMonthData(currentMonth, { marstek: { geladen: round2(geladen), ontladen: round2(ontladen) } });
+  showResult('marstek-result', `✓ Geladen: ${geladen} kWh · Ontladen: ${ontladen} kWh`);
+  toast('Marstek data opgeslagen');
+}
+
+function saveANWB() {
+  const betaald   = parseFloat(document.getElementById('anwb-betaald').value);
+  const ontvangen = parseFloat(document.getElementById('anwb-ontvangen').value);
+  if (isNaN(betaald) || isNaN(ontvangen)) { toast('Vul beide velden in'); return; }
+  setMonthData(currentMonth, { anwb: { betaald: round2(betaald), ontvangen: round2(ontvangen) } });
+  showResult('anwb-result', `✓ Betaald: €${betaald} · Ontvangen: €${ontvangen}`);
+  toast('ANWB data opgeslagen');
+}
+
+function saveInstellingen() {
+  const panelen  = parseFloat(document.getElementById('set-panelen').value);
+  const batterij = parseFloat(document.getElementById('set-batterij').value);
+  if (isNaN(panelen) || isNaN(batterij)) { toast('Vul beide velden in'); return; }
+  state.settings.panelen  = panelen;
+  state.settings.batterij = batterij;
+  saveState();
+  toast('Instellingen opgeslagen');
+  renderDashboard();
+}
+
+function renderImportView() {
+  // Pre-fill existing marstek/anwb values
+  const d = getMonthData(currentMonth);
+  if (d.marstek) {
+    document.getElementById('marstek-geladen').value  = d.marstek.geladen;
+    document.getElementById('marstek-ontladen').value = d.marstek.ontladen;
+  }
+  if (d.anwb) {
+    document.getElementById('anwb-betaald').value   = d.anwb.betaald;
+    document.getElementById('anwb-ontvangen').value = d.anwb.ontvangen;
+  }
+}
+
+function renderInstellingen() {
+  if (state.settings.panelen)  document.getElementById('set-panelen').value  = state.settings.panelen;
+  if (state.settings.batterij) document.getElementById('set-batterij').value = state.settings.batterij;
+}
+
+// ═══════════════════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════════════════
+
+function calcMonth(ym) {
+  const d = getMonthData(ym);
+  if (!d.hw && !d.hm) return null;
+
+  const inkoop       = d.hw?.inkoop        || 0;
+  const teruglevering= d.hw?.teruglevering || 0;
+  const opwek        = d.hm?.opwek         || 0;
+  const geladen      = d.marstek?.geladen  || 0;
+  const ontladen     = d.marstek?.ontladen || 0;
+  const anwbBetaald  = d.anwb?.betaald     || null;
+  const anwbOntvangen= d.anwb?.ontvangen   || null;
+
+  // Direct eigen verbruik = opwek - teruglevering - batterijlading
+  const directEigen = Math.max(0, opwek - teruglevering - geladen);
+  // Totaal verbruik
+  const totaalVerbruik = inkoop + directEigen + ontladen;
+  // Eigen verbruik % van opwek (hoeveel van je zon heb je zelf benut)
+  const eigenPct = opwek > 0 ? Math.min(100, round1((opwek - teruglevering) / opwek * 100)) : 0;
+  // Batterij rendement
+  const batRendement = geladen > 0 ? round1(ontladen / geladen * 100) : null;
+
+  // Financieel
+  let gemTarief = null;
+  let bespaardDirect = null;
+  let bespaardBat = null;
+  let nettoVoordeel = null;
+
+  if (anwbBetaald !== null && inkoop > 0) {
+    gemTarief = inkoop > 0 ? anwbBetaald / inkoop : 0;
+    bespaardDirect = round2(directEigen * gemTarief);
+    bespaardBat    = round2(ontladen * gemTarief);
+    nettoVoordeel  = round2(-anwbBetaald + (anwbOntvangen||0) + bespaardDirect + bespaardBat);
+  }
+
+  return {
+    inkoop, teruglevering, opwek, geladen, ontladen,
+    directEigen: round2(directEigen),
+    totaalVerbruik: round2(totaalVerbruik),
+    eigenPct, batRendement,
+    anwbBetaald, anwbOntvangen,
+    gemTarief, bespaardDirect, bespaardBat, nettoVoordeel,
+    hasHW: !!d.hw, hasHM: !!d.hm, hasMarstek: !!d.marstek, hasANWB: !!d.anwb,
+  };
+}
+
+// All months with any data, sorted
+function allMonths() {
+  return Object.keys(state.months).sort();
+}
+
+function allCalcs() {
+  return allMonths().map(ym => ({ ym, calc: calcMonth(ym) })).filter(x => x.calc);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER DASHBOARD
+// ═══════════════════════════════════════════════════════
+
+function renderDashboard() {
+  const c = calcMonth(currentMonth);
+
+  // Status bar
+  if (!c) {
+    setStatus('miss', 'Geen data voor deze maand — ga naar Importeer om data toe te voegen.');
+  } else {
+    const missing = [];
+    if (!c.hasHW) missing.push('HomeWizard CSV');
+    if (!c.hasHM) missing.push('Hoymiles CSV');
+    if (!c.hasMarstek) missing.push('Marstek');
+    if (!c.hasANWB) missing.push('ANWB bedragen');
+    if (missing.length === 0) {
+      setStatus('ok', 'Alle data compleet voor deze maand.');
+    } else {
+      setStatus('warn', 'Ontbrekend: ' + missing.join(', '));
+    }
+  }
+
+  // KPIs
+  setKPI('kpi-opwek',   c?.opwek,        'kWh');
+  setKPI('kpi-inkoop',  c?.inkoop,        'kWh');
+  setKPI('kpi-ontladen',c?.ontladen,      'kWh');
+  setKPI('kpi-terug',   c?.teruglevering, 'kWh');
+
+  // Eigen verbruik
+  setText('ef-net',    c ? `${c.inkoop} kWh` : '— kWh');
+  setText('ef-direct', c ? `${c.directEigen} kWh` : '— kWh');
+  setText('ef-bat',    c ? `${c.ontladen} kWh` : '— kWh');
+  setText('ef-total',  c ? `${c.totaalVerbruik} kWh` : '— kWh');
+  setText('eigen-pct', c ? `${c.eigenPct}%` : '—%');
+  document.getElementById('eigen-bar').style.width = c ? `${c.eigenPct}%` : '0%';
+
+  // Batterij rendement
+  if (c && c.geladen > 0) {
+    const maxKwh = Math.max(c.geladen, c.ontladen);
+    document.getElementById('bat-geladen-bar').style.width  = (c.geladen / maxKwh * 100) + '%';
+    document.getElementById('bat-ontladen-bar').style.width = (c.ontladen / maxKwh * 100) + '%';
+    document.getElementById('bat-geladen-val').textContent  = c.geladen + ' kWh';
+    document.getElementById('bat-ontladen-val').textContent = c.ontladen + ' kWh';
+    document.getElementById('bat-rendement').textContent    = c.batRendement !== null ? c.batRendement + '%' : '—%';
+  } else {
+    document.getElementById('bat-geladen-val').textContent  = '— kWh';
+    document.getElementById('bat-ontladen-val').textContent = '— kWh';
+    document.getElementById('bat-rendement').textContent    = '—%';
+  }
+
+  // Terugverdientijd
+  renderTerugverdien();
+}
+
+function renderTerugverdien() {
+  const panelen  = state.settings?.panelen  || null;
+  const batterij = state.settings?.batterij || null;
+  const totaal   = (panelen || 0) + (batterij || 0);
+
+  const calcs = allCalcs();
+  const maandenData = calcs.length;
+
+  let cumulatief = 0;
+  calcs.forEach(({ calc }) => {
+    if (calc.nettoVoordeel !== null) cumulatief += calc.nettoVoordeel;
+  });
+
+  // Average monthly saving
+  const maandenMetFinancieel = calcs.filter(x => x.calc.nettoVoordeel !== null).length;
+  const gemMaand = maandenMetFinancieel > 0 ? cumulatief / maandenMetFinancieel : null;
+
+  setText('tv-investering', totaal > 0 ? `€ ${totaal.toLocaleString('nl-NL')}` : '€ —');
+  setText('tv-invested-sub', panelen && batterij ? `Panelen €${panelen} + batterij €${batterij}` : 'Stel investering in via Instellingen');
+  setText('tv-terugverdiend', `€ ${round0(cumulatief).toLocaleString('nl-NL')}`);
+  setText('tv-maanden-data', maandenData > 0 ? `${maandenData} maand${maandenData !== 1 ? 'en' : ''}` : '—');
+  setText('tv-gem-maand', gemMaand !== null ? `€ ${round2(gemMaand)}` : '€ —');
+
+  if (totaal > 0) {
+    const pct = Math.min(100, round1(cumulatief / totaal * 100));
+    document.getElementById('tv-fill').style.width = pct + '%';
+    setText('tv-pct-label', `${pct}% terugverdiend`);
+
+    if (gemMaand > 0) {
+      const restMaanden = (totaal - cumulatief) / gemMaand;
+      const jaren = Math.floor(restMaanden / 12);
+      const maanden = Math.round(restMaanden % 12);
+      setText('tv-jaren-label', `Nog ~${jaren} jr ${maanden > 0 ? maanden + ' mnd' : ''}`);
+
+      // Break-even jaar
+      const nowDate = new Date();
+      const breakeven = new Date(nowDate.getTime() + restMaanden * 30.5 * 24 * 3600 * 1000);
+      setText('tv-breakeven', breakeven.getFullYear().toString());
+    } else {
+      setText('tv-jaren-label', 'Voer ANWB bedragen in voor projectie');
+      setText('tv-breakeven', '—');
+    }
+  } else {
+    document.getElementById('tv-fill').style.width = '0%';
+    setText('tv-pct-label', 'Stel investering in');
+    setText('tv-jaren-label', '');
+    setText('tv-breakeven', '—');
+  }
+
+  // Jaar projectie
+  if (gemMaand !== null) {
+    const projJaar = round0(gemMaand * 12);
+    setText('tv-proj-jaar', `€ ${projJaar}`);
+  } else {
+    setText('tv-proj-jaar', '€ —');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER GRAFIEKEN
+// ═══════════════════════════════════════════════════════
+
+function renderGrafieken() {
+  const data = allCalcs();
+
+  if (data.length === 0) {
+    ['chart-energie','chart-eigen','chart-batterij','chart-financieel','chart-fin-detail'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<text x="50%" y="50%" fill="#6b8085" font-size="11" text-anchor="middle" font-family="monospace">Geen data beschikbaar</text>`;
+    });
+    renderSeizoen(data);
+    return;
+  }
+
+  renderBarChart('chart-energie', data,
+    [
+      { key: 'opwek',         color: 'var(--solar)',  label: 'Opwek' },
+      { key: 'inkoop',        color: 'var(--grid)',   label: 'Inkoop' },
+      { key: 'teruglevering', color: 'var(--return)', label: 'Terug' },
+    ]
+  );
+
+  renderLineChart('chart-eigen', data, 'eigenPct', 'var(--solar)', '%', 0, 100);
+  renderDualBarChart('chart-batterij', data,
+    { key: 'geladen',  color: 'var(--battery)' },
+    { key: 'ontladen', color: 'var(--solar)' }
+  );
+
+  // Cumulatief financieel
+  let cumData = [];
+  let cum = 0;
+  data.forEach(({ ym, calc }) => {
+    if (calc.nettoVoordeel !== null) {
+      cum += calc.nettoVoordeel;
+      cumData.push({ ym, calc: { ...calc, cumVoordeel: round2(cum) } });
+    }
+  });
+  if (cumData.length > 0) {
+    renderLineChart('chart-financieel', cumData, 'cumVoordeel', 'var(--battery)', '€');
+    renderLineChart('chart-fin-detail', cumData, 'cumVoordeel', 'var(--battery)', '€');
+  }
+
+  renderSeizoen(data);
+  renderProjectie(data);
+}
+
+function renderBarChart(id, data, series) {
+  const svg = document.getElementById(id);
+  if (!svg) return;
+  const W = svg.parentElement.offsetWidth - 36;
+  const H = 140;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const maxVal = Math.max(1, ...data.flatMap(({ calc }) => series.map(s => calc[s.key] || 0)));
+  const barH = H - 24;
+  const groupW = W / data.length;
+  const barW = Math.max(4, (groupW / series.length) - 2);
+
+  let html = '';
+
+  // Grid lines
+  [0.25,0.5,0.75,1].forEach(f => {
+    const y = barH - barH * f;
+    html += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#1e2a2d" stroke-width="0.5"/>`;
+  });
+
+  data.forEach(({ ym, calc }, gi) => {
+    const gx = gi * groupW + groupW * 0.05;
+    series.forEach((s, si) => {
+      const val = calc[s.key] || 0;
+      const bh = Math.max(1, (val / maxVal) * barH);
+      const x = gx + si * (barW + 2);
+      const y = barH - bh;
+      html += `<rect x="${round1(x)}" y="${round1(y)}" width="${round1(barW)}" height="${round1(bh)}" fill="${s.color}" rx="2">
+        <title>${s.label}: ${val} kWh</title></rect>`;
+    });
+    // Month label
+    const [yr, mo] = ym.split('-').map(Number);
+    const names = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+    const lx = gi * groupW + groupW / 2;
+    html += `<text x="${round1(lx)}" y="${H - 4}" fill="#6b8085" font-size="9" text-anchor="middle" font-family="monospace">${names[mo-1]}'${String(yr).slice(2)}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function renderDualBarChart(id, data, s1, s2) {
+  const svg = document.getElementById(id);
+  if (!svg) return;
+  const W = svg.parentElement.offsetWidth - 36;
+  const H = 130;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const maxVal = Math.max(1, ...data.flatMap(({ calc }) => [calc[s1.key]||0, calc[s2.key]||0]));
+  const barH = H - 24;
+  const groupW = W / data.length;
+  const barW = Math.max(4, groupW * 0.35);
+
+  let html = '';
+  data.forEach(({ ym, calc }, gi) => {
+    const cx = gi * groupW + groupW / 2;
+    [[s1, -1], [s2, 1]].forEach(([s, dir]) => {
+      const val = calc[s.key] || 0;
+      const bh = Math.max(1, (val / maxVal) * barH);
+      const x = dir < 0 ? cx - barW - 1 : cx + 1;
+      const y = barH - bh;
+      html += `<rect x="${round1(x)}" y="${round1(y)}" width="${round1(barW)}" height="${round1(bh)}" fill="${s.color}" rx="2">
+        <title>${val} kWh</title></rect>`;
+    });
+    const [yr, mo] = ym.split('-').map(Number);
+    const names = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+    html += `<text x="${round1(cx)}" y="${H - 4}" fill="#6b8085" font-size="9" text-anchor="middle" font-family="monospace">${names[mo-1]}'${String(yr).slice(2)}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function renderLineChart(id, data, key, color, unit, minY, maxY) {
+  const svg = document.getElementById(id);
+  if (!svg) return;
+  const W = svg.parentElement.offsetWidth - 36;
+  const H = parseInt(svg.getAttribute('height')) || 120;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const vals = data.map(({ calc }) => calc[key] || 0).filter(v => v !== null);
+  if (vals.length === 0) return;
+
+  const lo = minY !== undefined ? minY : Math.min(...vals) * 0.9;
+  const hi = maxY !== undefined ? maxY : Math.max(...vals) * 1.1 || 1;
+  const plotH = H - 24;
+
+  function toY(v) { return plotH - ((v - lo) / (hi - lo)) * plotH; }
+  function toX(i) { return data.length === 1 ? W/2 : (i / (data.length - 1)) * (W - 20) + 10; }
+
+  const pts = data.map(({ calc }, i) => ({ x: toX(i), y: toY(calc[key] || 0) }));
+
+  let html = '';
+  // Grid
+  [0.25,0.5,0.75,1].forEach(f => {
+    const y = plotH - plotH * f;
+    html += `<line x1="0" y1="${round1(y)}" x2="${W}" y2="${round1(y)}" stroke="#1e2a2d" stroke-width="0.5"/>`;
+  });
+
+  // Area
+  const areaPath = `M${pts.map(p => `${round1(p.x)},${round1(p.y)}`).join(' L')} L${round1(pts[pts.length-1].x)},${plotH} L${round1(pts[0].x)},${plotH} Z`;
+  const gId = 'g' + id;
+  html += `<defs><linearGradient id="${gId}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+  </linearGradient></defs>`;
+  html += `<path d="${areaPath}" fill="url(#${gId})"/>`;
+
+  // Line
+  const linePath = `M ${pts.map(p => `${round1(p.x)},${round1(p.y)}`).join(' L ')}`;
+  html += `<path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  // Dots + labels
+  pts.forEach((p, i) => {
+    const val = data[i].calc[key];
+    const [yr, mo] = data[i].ym.split('-').map(Number);
+    const names = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+    html += `<circle cx="${round1(p.x)}" cy="${round1(p.y)}" r="3" fill="${color}" stroke="#0a0e0f" stroke-width="1.5">
+      <title>${names[mo-1]} ${yr}: ${val}${unit}</title></circle>`;
+    html += `<text x="${round1(p.x)}" y="${H - 4}" fill="#6b8085" font-size="8" text-anchor="middle" font-family="monospace">${names[mo-1]}'${String(yr).slice(2)}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function renderSeizoen(data) {
+  const grid = document.getElementById('seizoen-grid');
+  if (!grid) return;
+
+  const names = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  const dataByMonth = {};
+  data.forEach(({ ym, calc }) => {
+    const mo = parseInt(ym.split('-')[1]);
+    dataByMonth[mo] = calc.opwek || 0;
+  });
+
+  // Projection: if <12 months, extrapolate using known months
+  // Simple: use average of known months, scaled (solar has clear seasonality but we don't know curve)
+  // We just flag projected vs real
+  const hasData = new Set(Object.keys(dataByMonth).map(Number));
+  const maxOpwek = Math.max(1, ...Object.values(dataByMonth));
+
+  let html = '';
+  for (let m = 1; m <= 12; m++) {
+    const val = dataByMonth[m];
+    const hasReal = hasData.has(m);
+    const barH = hasReal ? Math.max(4, (val / maxOpwek) * 56) : 0;
+
+    html += `<div class="seizoen-month">
+      <div class="seizoen-bar-wrap">
+        <div class="seizoen-bar ${hasReal ? 'has-data' : 'no-data'}" style="height:${hasReal ? barH : 4}px"></div>
+      </div>
+      <div class="seizoen-name">${names[m-1]}</div>
+      ${hasReal ? `<div style="font-size:7px;color:var(--solar);font-family:monospace">${val}</div>` : ''}
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderProjectie(data) {
+  if (data.length === 0) return;
+  const nMaanden = data.length;
+  const totOpwek  = data.reduce((s, { calc }) => s + (calc.opwek || 0), 0);
+  const totInkoop = data.reduce((s, { calc }) => s + (calc.inkoop || 0), 0);
+  const finData   = data.filter(x => x.calc.nettoVoordeel !== null);
+  const totBesparing = finData.reduce((s, { calc }) => s + calc.nettoVoordeel, 0);
+
+  const factor = 12 / nMaanden;
+  setText('proj-opwek',    round0(totOpwek   * factor) + ' kWh');
+  setText('proj-inkoop',   round0(totInkoop  * factor) + ' kWh');
+  setText('proj-besparing',finData.length > 0 ? '€ ' + round0(totBesparing * factor) : '€ —');
+  setText('proj-opwek-sub', `op basis van ${nMaanden} maand${nMaanden !== 1 ? 'en' : ''}`);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER FINANCIEEL
+// ═══════════════════════════════════════════════════════
+
+function renderFinancieel() {
+  const c = calcMonth(currentMonth);
+
+  setText('fin-betaald',       c?.anwbBetaald   !== null ? `− € ${c.anwbBetaald}` : '—');
+  setText('fin-ontvangen',     c?.anwbOntvangen !== null ? `+ € ${c.anwbOntvangen}` : '—');
+  setText('fin-bespaard-direct', c?.bespaardDirect !== null ? `+ € ${c.bespaardDirect}` : '—');
+  setText('fin-bespaard-bat',  c?.bespaardBat    !== null ? `+ € ${c.bespaardBat}` : '—');
+  setText('fin-netto',         c?.nettoVoordeel  !== null ? `€ ${c.nettoVoordeel}` : '€ —');
+
+  // Render cumulatief chart
+  const data = allCalcs();
+  let cum = 0;
+  const cumData = [];
+  data.forEach(({ ym, calc }) => {
+    if (calc.nettoVoordeel !== null) {
+      cum += calc.nettoVoordeel;
+      cumData.push({ ym, calc: { ...calc, cumVoordeel: round2(cum) } });
+    }
+  });
+  if (cumData.length > 0) {
+    renderLineChart('chart-fin-detail', cumData, 'cumVoordeel', 'var(--battery)', '€');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════════════
+
+function setupDrop(dzId, handler) {
+  const dz = document.getElementById(dzId);
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const fakeInput = { files: [file] };
+    handler(fakeInput);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+
+function round0(v) { return Math.round(v); }
+function round1(v) { return Math.round(v * 10) / 10; }
+function round2(v) { return Math.round(v * 100) / 100; }
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function setKPI(id, val, unit) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (val === undefined || val === null) {
+    el.innerHTML = `—<span class="kpi-unit"></span>`;
+  } else {
+    el.innerHTML = `${val}<span class="kpi-unit"> ${unit}</span>`;
+  }
+}
+
+function setStatus(type, msg) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className = 'status-dot ' + type;
+  text.textContent = msg;
+}
+
+function showResult(id, msg, isError) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'block';
+  el.textContent = msg;
+  el.style.background = isError ? 'rgba(240,122,58,0.12)' : 'var(--battery-dim)';
+  el.style.borderColor = isError ? 'rgba(240,122,58,0.2)' : 'rgba(92,240,160,0.2)';
+  el.style.color = isError ? 'var(--return)' : 'var(--battery)';
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `energie-inzicht-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+updateMonthLabel();
+setupDrop('dz-hw', handleHWFile);
+setupDrop('dz-hm', handleHMFile);
+renderDashboard();
+
+// PWA Service Worker (inline, registered as blob)
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'energie-v1';
+    const ASSETS = [self.location.href];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+</script>
+</body>
+</html>

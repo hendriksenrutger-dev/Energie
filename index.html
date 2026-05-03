@@ -822,8 +822,12 @@ body {
       </div>
     </div>
 
-    <!-- TERUGVERDIENTIJD -->
+    <!-- TERUGVERDIENTIJD 1: STROOMBESPARING -->
     <div class="tv-card">
+      <div class="card-label" style="margin-bottom:12px">Terugverdientijd 1 — Stroombesparing door panelen & batterij</div>
+      <div style="font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:14px;line-height:1.5">
+        Hoeveel bespaar ik op stroom dankzij eigen opwek en batterij — ongeacht welk contract.
+      </div>
       <div class="tv-top">
         <div class="tv-invested">
           <div class="tv-invested-label">Totale investering</div>
@@ -831,39 +835,83 @@ body {
           <div class="tv-invested-sub" id="tv-breakdown-sub">Panelen + batterij</div>
         </div>
         <div class="tv-countdown">
-          <div class="tv-countdown-big" id="tv-terugverdiend">€ —</div>
+          <div class="tv-countdown-big" id="tv-terugverdiend-1">€ —</div>
           <div class="tv-countdown-label">al terugverdiend</div>
         </div>
       </div>
       <div class="tv-track">
-        <div class="tv-fill" id="tv-fill" style="width:0%"></div>
+        <div class="tv-fill" id="tv-fill-1" style="width:0%"></div>
       </div>
       <div class="tv-stats">
-        <span id="tv-pct-label">0% terugverdiend</span>
-        <span id="tv-jaren-label">Resterende tijd: —</span>
+        <span id="tv-pct-label-1">0% terugverdiend</span>
+        <span id="tv-jaren-label-1">—</span>
       </div>
       <div class="tv-breakdown">
         <div class="tv-item">
           <div class="tv-item-label">Gem. besparing/maand</div>
-          <div class="tv-item-val" id="tv-gem-maand" style="color:var(--battery)">€ —</div>
-        </div>
-        <div class="tv-item">
-          <div class="tv-item-label">Maanden data</div>
-          <div class="tv-item-val" id="tv-maanden-data" style="color:var(--text)">—</div>
+          <div class="tv-item-val" id="tv-gem-maand-1" style="color:var(--battery)">€ —</div>
         </div>
         <div class="tv-item">
           <div class="tv-item-label">Break-even jaar</div>
-          <div class="tv-item-val" id="tv-breakeven" style="color:var(--solar)">—</div>
+          <div class="tv-item-val" id="tv-breakeven-1" style="color:var(--solar)">—</div>
         </div>
         <div class="tv-item">
-          <div class="tv-item-label">Projectie dit jaar</div>
-          <div class="tv-item-val" id="tv-proj-jaar" style="color:var(--text)">€ —</div>
+          <div class="tv-item-label">Maanden data</div>
+          <div class="tv-item-val" id="tv-maanden-1" style="color:var(--text)">—</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Projectie jaar</div>
+          <div class="tv-item-val" id="tv-proj-1" style="color:var(--text)">€ —</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERUGVERDIENTIJD 2: OUD vs NIEUW -->
+    <div class="tv-card">
+      <div class="card-label" style="margin-bottom:12px">Terugverdientijd 2 — Oud contract vs nieuwe situatie</div>
+      <div style="font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:14px;line-height:1.5">
+        Wat betaalde ik vroeger per maand (referentie) minus wat ik nu betaal. Inclusief tariefsverschil.
+      </div>
+      <div class="tv-top">
+        <div class="tv-invested">
+          <div class="tv-invested-label">Totale investering</div>
+          <div class="tv-invested-val" id="tv-investering-2">€ —</div>
+          <div class="tv-invested-sub">Panelen + batterij</div>
+        </div>
+        <div class="tv-countdown">
+          <div class="tv-countdown-big" id="tv-terugverdiend-2">€ —</div>
+          <div class="tv-countdown-label">al terugverdiend</div>
+        </div>
+      </div>
+      <div class="tv-track">
+        <div class="tv-fill" id="tv-fill-2" style="width:0%"></div>
+      </div>
+      <div class="tv-stats">
+        <span id="tv-pct-label-2">0% terugverdiend</span>
+        <span id="tv-jaren-label-2">—</span>
+      </div>
+      <div class="tv-breakdown">
+        <div class="tv-item">
+          <div class="tv-item-label">Gem. besparing/maand</div>
+          <div class="tv-item-val" id="tv-gem-maand-2" style="color:var(--battery)">€ —</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Break-even jaar</div>
+          <div class="tv-item-val" id="tv-breakeven-2" style="color:var(--solar)">—</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Maanden data</div>
+          <div class="tv-item-val" id="tv-maanden-2" style="color:var(--text)">—</div>
+        </div>
+        <div class="tv-item">
+          <div class="tv-item-label">Projectie jaar</div>
+          <div class="tv-item-val" id="tv-proj-2" style="color:var(--text)">€ —</div>
         </div>
       </div>
 
-      <!-- REFERENTIEVERGELIJKING -->
+      <!-- MAANDVERGELIJKING -->
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <div class="card-label" style="margin-bottom:10px">Vergelijking met situatie zonder panelen · <span id="tv-ref-maand" style="color:var(--text-mid)">—</span></div>
+        <div class="card-label" style="margin-bottom:10px">Maandvergelijking · <span id="tv-ref-maand" style="color:var(--text-mid)">—</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
             <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Zonder panelen</div>
@@ -1196,11 +1244,24 @@ async function sbFetch(table, filters = {}) {
   return r.json();
 }
 
-async function sbUpsert(table, data) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+async function sbUpsertMonth(ym, data) {
+  // Gebruik onConflict op de unique constraint (user_code, maand)
+  const url = `${SUPABASE_URL}/rest/v1/energie_maanden?on_conflict=user_code,maand`;
+  const r = await fetch(url, {
     method: 'POST',
-    headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
-    body: JSON.stringify(data)
+    headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ user_code: USER_CODE, maand: ym, data })
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+async function sbUpsertSettings(data) {
+  // Gebruik onConflict op user_code (unique)
+  const url = `${SUPABASE_URL}/rest/v1/energie_instellingen?on_conflict=user_code`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ user_code: USER_CODE, data })
   });
   if (!r.ok) throw new Error(await r.text());
 }
@@ -1215,29 +1276,31 @@ let state = { months: {}, settings: {} };
 async function loadAllData() {
   if (!USER_CODE) return;
 
-  // Laad eerst lokale backup als basis
+  // Eerst lokale backup laden als basis
   try {
     const local = JSON.parse(localStorage.getItem('energie_inzicht_v1'));
-    if (local) state = local;
+    if (local && local.months) state = local;
   } catch {}
 
-  // Dan Supabase laden en samenvoegen
+  // Dan Supabase laden — Supabase is altijd leidend
   try {
-    const rows = await sbFetch('energie_maanden', { user_code: USER_CODE });
-    // Merge: Supabase wint per maand (is de meest recente versie)
-    rows.forEach(r => {
-      // Merge bestaande lokale data met Supabase data
-      const local = state.months[r.maand] || {};
-      state.months[r.maand] = { ...local, ...r.data };
-    });
-    const sets = await sbFetch('energie_instellingen', { user_code: USER_CODE });
+    const [rows, sets] = await Promise.all([
+      sbFetch('energie_maanden', { user_code: USER_CODE }),
+      sbFetch('energie_instellingen', { user_code: USER_CODE })
+    ]);
+
+    // Maanden: Supabase data is leidend, overschrijft lokale data
+    rows.forEach(r => { state.months[r.maand] = r.data; });
+
+    // Instellingen: Supabase data is leidend
     if (sets.length > 0 && sets[0].data) {
-      state.settings = { ...state.settings, ...sets[0].data };
+      state.settings = sets[0].data;
     }
-    console.log('✓ Data geladen van Supabase:', Object.keys(state.months));
+
     localBackup();
   } catch(e) {
-    console.warn('Supabase laden mislukt, gebruik lokale data:', e.message);
+    console.warn('Supabase laden mislukt:', e.message);
+    toast('⚠ Offline — lokale data gebruikt');
   }
 }
 
@@ -1247,31 +1310,24 @@ function localBackup() {
 
 async function saveMonthToCloud(ym) {
   if (!USER_CODE) return;
-  const dataToSave = state.months[ym];
-  console.log(`Opslaan ${ym}:`, JSON.stringify(dataToSave));
-  try {
-    await sbUpsert('energie_maanden', {
-      user_code: USER_CODE,
-      maand: ym,
-      data: dataToSave
-    });
-    console.log(`✓ ${ym} opgeslagen in Supabase`);
-  } catch(e) {
-    console.error(`✗ Supabase opslaan mislukt voor ${ym}:`, e.message);
-    toast('⚠ Cloud opslaan mislukt — data alleen lokaal');
-  }
   localBackup();
+  try {
+    await sbUpsertMonth(ym, state.months[ym]);
+  } catch(e) {
+    console.error('Opslaan mislukt:', e.message);
+    toast('⚠ Cloud opslaan mislukt');
+  }
 }
 
 async function saveSettingsToCloud() {
   if (!USER_CODE) return;
-  try {
-    await sbUpsert('energie_instellingen', {
-      user_code: USER_CODE,
-      data: state.settings
-    });
-  } catch(e) { console.warn('Cloud opslaan mislukt:', e); }
   localBackup();
+  try {
+    await sbUpsertSettings(state.settings);
+  } catch(e) {
+    console.error('Instellingen opslaan mislukt:', e.message);
+    toast('⚠ Cloud opslaan mislukt');
+  }
 }
 
 // Current month: YYYY-MM string
@@ -1674,72 +1730,80 @@ function renderTerugverdien() {
   const totaal   = (panelen || 0) + (batterij || 0);
 
   const calcs = allCalcs();
-  const maandenData = calcs.length;
 
-  // Bereken echte besparing per maand: referentiekosten - netto betaald
-  let cumulatief = 0;
-  let maandenMetBesparing = 0;
+  // ── KAART 1: Stroombesparing door panelen & batterij ──
+  // Besparing = eigen verbruik (direct + batterij) × tarief + ontvangen teruglevering
+  let cum1 = 0, n1 = 0;
+  calcs.forEach(({ calc }) => {
+    if (calc.anwbBetaald !== null && tarief !== null) {
+      // Eigen verbruik besparing + teruglevering opbrengst
+      const eigenBespaard = round2((calc.directEigen + calc.ontladen) * tarief);
+      const teruglOpbrengst = calc.anwbOntvangen || 0;
+      cum1 += eigenBespaard + teruglOpbrengst;
+      n1++;
+    } else if (tarief !== null && calc.inkoop > 0) {
+      // Schatting zonder ANWB
+      const eigenBespaard = round2((calc.directEigen + calc.ontladen) * tarief);
+      cum1 += eigenBespaard;
+      n1++;
+    }
+  });
+  const gem1 = n1 > 0 ? round2(cum1 / n1) : null;
 
+  // ── KAART 2: Oud contract vs nieuwe situatie ──
+  // Besparing = referentiekosten (oud) - netto betaald (nieuw)
+  let cum2 = 0, n2 = 0;
   calcs.forEach(({ ym, calc }) => {
     if (tarief !== null) {
-      // Referentie: wat zou deze maand hebben gekost zonder panelen
       const refKwh = getRefKwh(ym);
       if (refKwh !== null) {
         const refKosten = round2(refKwh * tarief);
-        // Netto betaald = betaald - ontvangen (kan negatief zijn = tegoed)
         const nettoBetaald = calc.anwbBetaald !== null
           ? round2(calc.anwbBetaald - (calc.anwbOntvangen || 0))
-          : round2(calc.inkoop * tarief); // schatting als ANWB ontbreekt
-        const besparing = round2(refKosten - nettoBetaald);
-        cumulatief += besparing;
-        maandenMetBesparing++;
+          : round2(calc.inkoop * tarief);
+        cum2 += round2(refKosten - nettoBetaald);
+        n2++;
       }
-    } else if (calc.nettoVoordeel !== null) {
-      // Fallback: gebruik oude methode als tarief niet ingesteld
-      cumulatief += calc.nettoVoordeel;
-      maandenMetBesparing++;
     }
   });
+  const gem2 = n2 > 0 ? round2(cum2 / n2) : null;
 
-  const gemMaand = maandenMetBesparing > 0 ? round2(cumulatief / maandenMetBesparing) : null;
+  function fillCard(suffix, cum, gem, n) {
+    const inv = suffix === '2' ? totaal : totaal;
+    setText(`tv-investering${suffix === '1' ? '' : '-2'}`, inv > 0 ? `€ ${inv.toLocaleString('nl-NL')}` : '€ —');
+    if (suffix === '1') setText('tv-breakdown-sub', panelen && batterij ? `Panelen €${panelen} + batterij €${batterij}` : 'Stel investering in');
+    setText(`tv-terugverdiend-${suffix}`, `€ ${round0(cum)}`);
+    setText(`tv-maanden-${suffix}`, n > 0 ? `${n} maand${n !== 1 ? 'en' : ''}` : '—');
+    setText(`tv-gem-maand-${suffix}`, gem !== null ? `€ ${gem}` : '€ —');
+    setText(`tv-proj-${suffix}`, gem !== null ? `€ ${round0(gem * 12)}` : '€ —');
 
-  setText('tv-investering', totaal > 0 ? `€ ${totaal.toLocaleString('nl-NL')}` : '€ —');
-  setText('tv-invested-sub', panelen && batterij ? `Panelen €${panelen} + batterij €${batterij}` : 'Stel investering in via Instellingen');
-  setText('tv-terugverdiend', `€ ${round0(cumulatief).toLocaleString('nl-NL')}`);
-  setText('tv-maanden-data', maandenData > 0 ? `${maandenData} maand${maandenData !== 1 ? 'en' : ''}` : '—');
-  setText('tv-gem-maand', gemMaand !== null ? `€ ${gemMaand}` : '€ —');
-
-  if (totaal > 0 && cumulatief > 0) {
-    const pct = Math.min(100, round1(cumulatief / totaal * 100));
-    document.getElementById('tv-fill').style.width = pct + '%';
-    setText('tv-pct-label', `${pct}% terugverdiend`);
-
-    if (gemMaand > 0) {
-      const restMaanden = (totaal - cumulatief) / gemMaand;
-      const jaren = Math.floor(restMaanden / 12);
-      const maanden = Math.round(restMaanden % 12);
-      setText('tv-jaren-label', `Nog ~${jaren} jr ${maanden > 0 ? maanden + ' mnd' : ''}`);
-      const nowDate = new Date();
-      const breakeven = new Date(nowDate.getTime() + restMaanden * 30.5 * 24 * 3600 * 1000);
-      setText('tv-breakeven', breakeven.getFullYear().toString());
+    if (inv > 0 && cum > 0) {
+      const pct = Math.min(100, round1(cum / inv * 100));
+      document.getElementById(`tv-fill-${suffix}`).style.width = pct + '%';
+      setText(`tv-pct-label-${suffix}`, `${pct}% terugverdiend`);
+      if (gem > 0) {
+        const rest = (inv - cum) / gem;
+        const jr = Math.floor(rest / 12);
+        const mnd = Math.round(rest % 12);
+        setText(`tv-jaren-label-${suffix}`, `Nog ~${jr} jr ${mnd > 0 ? mnd + ' mnd' : ''}`);
+        const be = new Date(Date.now() + rest * 30.5 * 24 * 3600 * 1000);
+        setText(`tv-breakeven-${suffix}`, be.getFullYear().toString());
+      } else {
+        setText(`tv-jaren-label-${suffix}`, 'Voer tariefdata in');
+        setText(`tv-breakeven-${suffix}`, '—');
+      }
     } else {
-      setText('tv-jaren-label', 'Stel tarief in voor projectie');
-      setText('tv-breakeven', '—');
+      document.getElementById(`tv-fill-${suffix}`).style.width = '0%';
+      setText(`tv-pct-label-${suffix}`, inv > 0 ? '0% terugverdiend' : 'Stel investering in');
+      setText(`tv-jaren-label-${suffix}`, tarief ? '' : 'Stel tarief in via Instellingen');
+      setText(`tv-breakeven-${suffix}`, '—');
     }
-  } else {
-    document.getElementById('tv-fill').style.width = '0%';
-    setText('tv-pct-label', totaal > 0 ? '0% terugverdiend' : 'Stel investering in');
-    setText('tv-jaren-label', tarief ? '' : 'Stel tarief in via Instellingen');
-    setText('tv-breakeven', '—');
   }
 
-  if (gemMaand !== null) {
-    setText('tv-proj-jaar', `€ ${round0(gemMaand * 12)}`);
-  } else {
-    setText('tv-proj-jaar', '€ —');
-  }
+  fillCard('1', cum1, gem1, n1);
+  fillCard('2', cum2, gem2, n2);
 
-  // Referentievergelijking voor huidige maand
+  // Maandvergelijking voor geselecteerde maand
   const c = calcMonth(currentMonth);
   const [y, m] = currentMonth.split('-');
   const names = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
@@ -1753,12 +1817,13 @@ function renderTerugverdien() {
         ? round2(c.anwbBetaald - (c.anwbOntvangen || 0))
         : round2(c.inkoop * tarief);
       const besparing = round2(refKosten - nettoBetaald);
-
       setText('tv-ref-kosten', `€ ${refKosten}`);
       setText('tv-ref-kwh', `${refKwh} kWh × €${tarief}`);
       setText('tv-met-kosten', `€ ${nettoBetaald}`);
       setText('tv-besparing-ref', `€ ${besparing}`);
-      setText('tv-ref-note', c.anwbBetaald !== null ? 'Gebaseerd op werkelijke ANWB-bedragen' : 'Schatting — voer ANWB-bedragen in voor exacte berekening');
+      setText('tv-ref-note', c.anwbBetaald !== null
+        ? 'Gebaseerd op werkelijke bedragen'
+        : 'Schatting — voer ANWB-bedragen in voor exacte berekening');
     }
   } else if (tarief === null) {
     setText('tv-ref-note', 'Stel tarief in via Instellingen → Referentietarief');

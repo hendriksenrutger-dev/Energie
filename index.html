@@ -860,6 +860,29 @@ body {
           <div class="tv-item-val" id="tv-proj-jaar" style="color:var(--text)">€ —</div>
         </div>
       </div>
+
+      <!-- REFERENTIEVERGELIJKING -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="card-label" style="margin-bottom:10px">Vergelijking met situatie zonder panelen · <span id="tv-ref-maand" style="color:var(--text-mid)">—</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Zonder panelen</div>
+            <div style="font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;color:var(--return)" id="tv-ref-kosten">€ —</div>
+            <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-top:2px" id="tv-ref-kwh">— kWh × tarief</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Met panelen</div>
+            <div style="font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;color:var(--grid)" id="tv-met-kosten">€ —</div>
+            <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-top:2px">netto betaald aan net</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px">
+            <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Besparing</div>
+            <div style="font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;color:var(--battery)" id="tv-besparing-ref">€ —</div>
+            <div style="font-size:9px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-top:2px">echte maandbesparing</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-top:8px" id="tv-ref-note">Stel tarief in via Instellingen → Referentietarief</div>
+      </div>
     </div>
 
   </div>
@@ -1110,6 +1133,18 @@ body {
       </div>
       <div class="settings-note">
         Pas de aanschafprijs aan als je een subsidie of teruggave ontvangt. De terugverdientijd wordt automatisch herberekend.
+      </div>
+      <button class="btn btn-primary" onclick="saveInstellingen()">Opslaan</button>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-section-title">Referentietarief</div>
+      <div class="field">
+        <label>Tarief per kWh vóór panelen (€)</label>
+        <input type="number" step="0.00001" id="set-tarief" placeholder="bijv. 0.23897">
+      </div>
+      <div class="settings-note">
+        Het tarief dat je betaalde bij je oude leverancier. Wordt gebruikt om te berekenen wat je maand zou hebben gekost zonder panelen en batterij. Referentieverbruik per maand is automatisch berekend uit jouw historische P1-data (mrt 2025 – feb 2026).
       </div>
       <button class="btn btn-primary" onclick="saveInstellingen()">Opslaan</button>
     </div>
@@ -1434,16 +1469,17 @@ async function saveANWB() {
 async function saveInstellingen() {
   const panelen  = parseFloat(document.getElementById('set-panelen').value);
   const batterij = parseFloat(document.getElementById('set-batterij').value);
-  if (isNaN(panelen) || isNaN(batterij)) { toast('Vul beide velden in'); return; }
+  const tarief   = parseFloat(document.getElementById('set-tarief').value);
+  if (isNaN(panelen) || isNaN(batterij)) { toast('Vul investering in'); return; }
   state.settings.panelen  = panelen;
   state.settings.batterij = batterij;
+  if (!isNaN(tarief)) state.settings.tarief = tarief;
   await saveSettingsToCloud();
   toast('Instellingen opgeslagen ☁');
   renderDashboard();
 }
 
 function renderImportView() {
-  // Pre-fill existing marstek/anwb values
   const d = getMonthData(currentMonth);
   if (d.marstek) {
     document.getElementById('marstek-geladen').value  = d.marstek.geladen;
@@ -1458,6 +1494,7 @@ function renderImportView() {
 function renderInstellingen() {
   if (state.settings.panelen)  document.getElementById('set-panelen').value  = state.settings.panelen;
   if (state.settings.batterij) document.getElementById('set-batterij').value = state.settings.batterij;
+  if (state.settings.tarief)   document.getElementById('set-tarief').value   = state.settings.tarief;
   const codeEl = document.getElementById('current-code-display');
   if (codeEl) codeEl.textContent = `Actieve code: ${USER_CODE || '—'} · Data wordt gesynchroniseerd via cloud.`;
 }
@@ -1469,8 +1506,29 @@ function resetUserCode() {
 }
 
 // ═══════════════════════════════════════════════════════
-// CALCULATIONS
+// REFERENTIEDATA (historisch verbruik zonder panelen)
+// Bron: P1-meter mrt 2025 – feb 2026
 // ═══════════════════════════════════════════════════════
+
+const REFERENTIE_KWH = {
+  '03': 344.8,
+  '04': 339.7,
+  '05': 338.0,
+  '06': 316.7,
+  '07': 257.2,
+  '08': 327.3,
+  '09': 361.9,
+  '10': 434.6,
+  '11': 388.0,
+  '12': 442.5,
+  '01': 438.9,
+  '02': 350.7,
+};
+
+function getRefKwh(ym) {
+  const mo = ym.split('-')[1];
+  return REFERENTIE_KWH[mo] || null;
+}
 
 function calcMonth(ym) {
   const d = getMonthData(ym);
@@ -1594,27 +1652,46 @@ function renderDashboard() {
 function renderTerugverdien() {
   const panelen  = state.settings?.panelen  || null;
   const batterij = state.settings?.batterij || null;
+  const tarief   = state.settings?.tarief   || null;
   const totaal   = (panelen || 0) + (batterij || 0);
 
   const calcs = allCalcs();
   const maandenData = calcs.length;
 
+  // Bereken echte besparing per maand: referentiekosten - netto betaald
   let cumulatief = 0;
-  calcs.forEach(({ calc }) => {
-    if (calc.nettoVoordeel !== null) cumulatief += calc.nettoVoordeel;
+  let maandenMetBesparing = 0;
+
+  calcs.forEach(({ ym, calc }) => {
+    if (tarief !== null) {
+      // Referentie: wat zou deze maand hebben gekost zonder panelen
+      const refKwh = getRefKwh(ym);
+      if (refKwh !== null) {
+        const refKosten = round2(refKwh * tarief);
+        // Netto betaald = betaald - ontvangen (kan negatief zijn = tegoed)
+        const nettoBetaald = calc.anwbBetaald !== null
+          ? round2(calc.anwbBetaald - (calc.anwbOntvangen || 0))
+          : round2(calc.inkoop * tarief); // schatting als ANWB ontbreekt
+        const besparing = round2(refKosten - nettoBetaald);
+        cumulatief += besparing;
+        maandenMetBesparing++;
+      }
+    } else if (calc.nettoVoordeel !== null) {
+      // Fallback: gebruik oude methode als tarief niet ingesteld
+      cumulatief += calc.nettoVoordeel;
+      maandenMetBesparing++;
+    }
   });
 
-  // Average monthly saving
-  const maandenMetFinancieel = calcs.filter(x => x.calc.nettoVoordeel !== null).length;
-  const gemMaand = maandenMetFinancieel > 0 ? cumulatief / maandenMetFinancieel : null;
+  const gemMaand = maandenMetBesparing > 0 ? round2(cumulatief / maandenMetBesparing) : null;
 
   setText('tv-investering', totaal > 0 ? `€ ${totaal.toLocaleString('nl-NL')}` : '€ —');
   setText('tv-invested-sub', panelen && batterij ? `Panelen €${panelen} + batterij €${batterij}` : 'Stel investering in via Instellingen');
   setText('tv-terugverdiend', `€ ${round0(cumulatief).toLocaleString('nl-NL')}`);
   setText('tv-maanden-data', maandenData > 0 ? `${maandenData} maand${maandenData !== 1 ? 'en' : ''}` : '—');
-  setText('tv-gem-maand', gemMaand !== null ? `€ ${round2(gemMaand)}` : '€ —');
+  setText('tv-gem-maand', gemMaand !== null ? `€ ${gemMaand}` : '€ —');
 
-  if (totaal > 0) {
+  if (totaal > 0 && cumulatief > 0) {
     const pct = Math.min(100, round1(cumulatief / totaal * 100));
     document.getElementById('tv-fill').style.width = pct + '%';
     setText('tv-pct-label', `${pct}% terugverdiend`);
@@ -1624,28 +1701,49 @@ function renderTerugverdien() {
       const jaren = Math.floor(restMaanden / 12);
       const maanden = Math.round(restMaanden % 12);
       setText('tv-jaren-label', `Nog ~${jaren} jr ${maanden > 0 ? maanden + ' mnd' : ''}`);
-
-      // Break-even jaar
       const nowDate = new Date();
       const breakeven = new Date(nowDate.getTime() + restMaanden * 30.5 * 24 * 3600 * 1000);
       setText('tv-breakeven', breakeven.getFullYear().toString());
     } else {
-      setText('tv-jaren-label', 'Voer ANWB bedragen in voor projectie');
+      setText('tv-jaren-label', 'Stel tarief in voor projectie');
       setText('tv-breakeven', '—');
     }
   } else {
     document.getElementById('tv-fill').style.width = '0%';
-    setText('tv-pct-label', 'Stel investering in');
-    setText('tv-jaren-label', '');
+    setText('tv-pct-label', totaal > 0 ? '0% terugverdiend' : 'Stel investering in');
+    setText('tv-jaren-label', tarief ? '' : 'Stel tarief in via Instellingen');
     setText('tv-breakeven', '—');
   }
 
-  // Jaar projectie
   if (gemMaand !== null) {
-    const projJaar = round0(gemMaand * 12);
-    setText('tv-proj-jaar', `€ ${projJaar}`);
+    setText('tv-proj-jaar', `€ ${round0(gemMaand * 12)}`);
   } else {
     setText('tv-proj-jaar', '€ —');
+  }
+
+  // Referentievergelijking voor huidige maand
+  const c = calcMonth(currentMonth);
+  const [y, m] = currentMonth.split('-');
+  const names = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  setText('tv-ref-maand', `${names[parseInt(m)-1]} ${y}`);
+
+  if (tarief !== null && c) {
+    const refKwh = getRefKwh(currentMonth);
+    if (refKwh !== null) {
+      const refKosten = round2(refKwh * tarief);
+      const nettoBetaald = c.anwbBetaald !== null
+        ? round2(c.anwbBetaald - (c.anwbOntvangen || 0))
+        : round2(c.inkoop * tarief);
+      const besparing = round2(refKosten - nettoBetaald);
+
+      setText('tv-ref-kosten', `€ ${refKosten}`);
+      setText('tv-ref-kwh', `${refKwh} kWh × €${tarief}`);
+      setText('tv-met-kosten', `€ ${nettoBetaald}`);
+      setText('tv-besparing-ref', `€ ${besparing}`);
+      setText('tv-ref-note', c.anwbBetaald !== null ? 'Gebaseerd op werkelijke ANWB-bedragen' : 'Schatting — voer ANWB-bedragen in voor exacte berekening');
+    }
+  } else if (tarief === null) {
+    setText('tv-ref-note', 'Stel tarief in via Instellingen → Referentietarief');
   }
 }
 

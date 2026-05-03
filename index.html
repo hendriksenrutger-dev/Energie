@@ -1214,18 +1214,30 @@ let state = { months: {}, settings: {} };
 
 async function loadAllData() {
   if (!USER_CODE) return;
+
+  // Laad eerst lokale backup als basis
+  try {
+    const local = JSON.parse(localStorage.getItem('energie_inzicht_v1'));
+    if (local) state = local;
+  } catch {}
+
+  // Dan Supabase laden en samenvoegen
   try {
     const rows = await sbFetch('energie_maanden', { user_code: USER_CODE });
-    state.months = {};
-    rows.forEach(r => { state.months[r.maand] = r.data; });
+    // Merge: Supabase wint per maand (is de meest recente versie)
+    rows.forEach(r => {
+      // Merge bestaande lokale data met Supabase data
+      const local = state.months[r.maand] || {};
+      state.months[r.maand] = { ...local, ...r.data };
+    });
     const sets = await sbFetch('energie_instellingen', { user_code: USER_CODE });
-    state.settings = sets.length > 0 ? (sets[0].data || {}) : {};
+    if (sets.length > 0 && sets[0].data) {
+      state.settings = { ...state.settings, ...sets[0].data };
+    }
+    console.log('✓ Data geladen van Supabase:', Object.keys(state.months));
+    localBackup();
   } catch(e) {
-    console.warn('Supabase laden mislukt, gebruik lokale data:', e);
-    try {
-      const local = JSON.parse(localStorage.getItem('energie_inzicht_v1'));
-      if (local) state = local;
-    } catch {}
+    console.warn('Supabase laden mislukt, gebruik lokale data:', e.message);
   }
 }
 
@@ -1235,13 +1247,19 @@ function localBackup() {
 
 async function saveMonthToCloud(ym) {
   if (!USER_CODE) return;
+  const dataToSave = state.months[ym];
+  console.log(`Opslaan ${ym}:`, JSON.stringify(dataToSave));
   try {
     await sbUpsert('energie_maanden', {
       user_code: USER_CODE,
       maand: ym,
-      data: state.months[ym]
+      data: dataToSave
     });
-  } catch(e) { console.warn('Cloud opslaan mislukt:', e); }
+    console.log(`✓ ${ym} opgeslagen in Supabase`);
+  } catch(e) {
+    console.error(`✗ Supabase opslaan mislukt voor ${ym}:`, e.message);
+    toast('⚠ Cloud opslaan mislukt — data alleen lokaal');
+  }
   localBackup();
 }
 

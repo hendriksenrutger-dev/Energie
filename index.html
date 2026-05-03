@@ -1103,6 +1103,14 @@ body {
     </div>
 
     <div class="settings-card">
+      <div class="settings-section-title">Gebruikerscode</div>
+      <div class="settings-note" id="current-code-display">
+        Actieve code: laden…
+      </div>
+      <button class="btn btn-ghost" onclick="resetUserCode()" style="align-self:flex-start;margin-top:4px">Wijzig code / nieuw apparaat</button>
+    </div>
+
+    <div class="settings-card">
       <div class="settings-section-title">Data beheer</div>
       <div class="settings-note">
         Alle data wordt lokaal opgeslagen in je browser (localStorage). Data synchroniseert niet automatisch tussen apparaten. Gebruik de import-knoppen om data opnieuw in te laden op een ander apparaat.
@@ -1119,22 +1127,87 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════════════
+
+const SUPABASE_URL = 'https://kegpsbtlfnqxrwiaeovc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_4afcXICjvnZHcjxruVoMRA_PKFBp1hp';
+
+function sbHeaders() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+async function sbFetch(table, filters = {}) {
+  let url = `${SUPABASE_URL}/rest/v1/${table}?select=*`;
+  Object.entries(filters).forEach(([k, v]) => { url += `&${k}=eq.${encodeURIComponent(v)}`; });
+  const r = await fetch(url, { headers: sbHeaders() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbUpsert(table, data) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+// ═══════════════════════════════════════════════════════
 // STATE & STORAGE
 // ═══════════════════════════════════════════════════════
 
-const STORAGE_KEY = 'energie_inzicht_v1';
+let USER_CODE = localStorage.getItem('energie_user_code') || null;
+let state = { months: {}, settings: {} };
 
-function loadState() {
+async function loadAllData() {
+  if (!USER_CODE) return;
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { months: {}, settings: {} };
-  } catch { return { months: {}, settings: {} }; }
+    const rows = await sbFetch('energie_maanden', { user_code: USER_CODE });
+    state.months = {};
+    rows.forEach(r => { state.months[r.maand] = r.data; });
+    const sets = await sbFetch('energie_instellingen', { user_code: USER_CODE });
+    state.settings = sets.length > 0 ? (sets[0].data || {}) : {};
+  } catch(e) {
+    console.warn('Supabase laden mislukt, gebruik lokale data:', e);
+    try {
+      const local = JSON.parse(localStorage.getItem('energie_inzicht_v1'));
+      if (local) state = local;
+    } catch {}
+  }
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function localBackup() {
+  localStorage.setItem('energie_inzicht_v1', JSON.stringify(state));
 }
 
-let state = loadState();
+async function saveMonthToCloud(ym) {
+  if (!USER_CODE) return;
+  try {
+    await sbUpsert('energie_maanden', {
+      user_code: USER_CODE,
+      maand: ym,
+      data: state.months[ym]
+    });
+  } catch(e) { console.warn('Cloud opslaan mislukt:', e); }
+  localBackup();
+}
+
+async function saveSettingsToCloud() {
+  if (!USER_CODE) return;
+  try {
+    await sbUpsert('energie_instellingen', {
+      user_code: USER_CODE,
+      data: state.settings
+    });
+  } catch(e) { console.warn('Cloud opslaan mislukt:', e); }
+  localBackup();
+}
 
 // Current month: YYYY-MM string
 const now = new Date();
@@ -1144,9 +1217,9 @@ function getMonthData(ym) {
   return state.months[ym] || {};
 }
 
-function setMonthData(ym, partial) {
+async function setMonthData(ym, partial) {
   state.months[ym] = { ...getMonthData(ym), ...partial };
-  saveState();
+  await saveMonthToCloud(ym);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1298,10 +1371,10 @@ function handleHWFile(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const result = parseHomeWizard(e.target.result, currentMonth);
-      setMonthData(currentMonth, { hw: result });
+      await setMonthData(currentMonth, { hw: result });
       showResult('hw-result', `✓ Inkoop: ${result.inkoop} kWh · Teruglevering: ${result.teruglevering} kWh`);
       toast('HomeWizard data opgeslagen');
     } catch(err) {
@@ -1315,10 +1388,10 @@ function handleHMFile(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const result = parseHoymiles(e.target.result, currentMonth);
-      setMonthData(currentMonth, { hm: result });
+      await setMonthData(currentMonth, { hm: result });
       showResult('hm-result', `✓ Opwek: ${result.opwek} kWh`);
       toast('Hoymiles data opgeslagen');
     } catch(err) {
@@ -1328,32 +1401,32 @@ function handleHMFile(input) {
   reader.readAsText(file);
 }
 
-function saveMarstek() {
+async function saveMarstek() {
   const geladen  = parseFloat(document.getElementById('marstek-geladen').value);
   const ontladen = parseFloat(document.getElementById('marstek-ontladen').value);
   if (isNaN(geladen) || isNaN(ontladen)) { toast('Vul beide velden in'); return; }
-  setMonthData(currentMonth, { marstek: { geladen: round2(geladen), ontladen: round2(ontladen) } });
+  await setMonthData(currentMonth, { marstek: { geladen: round2(geladen), ontladen: round2(ontladen) } });
   showResult('marstek-result', `✓ Geladen: ${geladen} kWh · Ontladen: ${ontladen} kWh`);
-  toast('Marstek data opgeslagen');
+  toast('Marstek data opgeslagen ☁');
 }
 
-function saveANWB() {
+async function saveANWB() {
   const betaald   = parseFloat(document.getElementById('anwb-betaald').value);
   const ontvangen = parseFloat(document.getElementById('anwb-ontvangen').value);
   if (isNaN(betaald) || isNaN(ontvangen)) { toast('Vul beide velden in'); return; }
-  setMonthData(currentMonth, { anwb: { betaald: round2(betaald), ontvangen: round2(ontvangen) } });
+  await setMonthData(currentMonth, { anwb: { betaald: round2(betaald), ontvangen: round2(ontvangen) } });
   showResult('anwb-result', `✓ Betaald: €${betaald} · Ontvangen: €${ontvangen}`);
-  toast('ANWB data opgeslagen');
+  toast('ANWB data opgeslagen ☁');
 }
 
-function saveInstellingen() {
+async function saveInstellingen() {
   const panelen  = parseFloat(document.getElementById('set-panelen').value);
   const batterij = parseFloat(document.getElementById('set-batterij').value);
   if (isNaN(panelen) || isNaN(batterij)) { toast('Vul beide velden in'); return; }
   state.settings.panelen  = panelen;
   state.settings.batterij = batterij;
-  saveState();
-  toast('Instellingen opgeslagen');
+  await saveSettingsToCloud();
+  toast('Instellingen opgeslagen ☁');
   renderDashboard();
 }
 
@@ -1373,6 +1446,14 @@ function renderImportView() {
 function renderInstellingen() {
   if (state.settings.panelen)  document.getElementById('set-panelen').value  = state.settings.panelen;
   if (state.settings.batterij) document.getElementById('set-batterij').value = state.settings.batterij;
+  const codeEl = document.getElementById('current-code-display');
+  if (codeEl) codeEl.textContent = `Actieve code: ${USER_CODE || '—'} · Data wordt gesynchroniseerd via cloud.`;
+}
+
+function resetUserCode() {
+  if (!confirm('Wil je van code wisselen? Je huidige data blijft in de cloud bewaard.')) return;
+  localStorage.removeItem('energie_user_code');
+  location.reload();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1873,15 +1954,79 @@ function exportData() {
 }
 
 // ═══════════════════════════════════════════════════════
+// SETUP SCHERM (eerste gebruik / nieuw apparaat)
+// ═══════════════════════════════════════════════════════
+
+function showSetupScreen() {
+  const overlay = document.createElement('div');
+  overlay.id = 'setup-overlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:var(--bg);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  `;
+  overlay.innerHTML = `
+    <div style="max-width:360px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:16px">⚡</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:8px">Energie Inzicht</div>
+      <div style="font-size:12px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:24px;line-height:1.6">
+        Kies een persoonlijke code om je data op te slaan.<br>
+        Gebruik dezelfde code op al je apparaten.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input id="setup-code" type="text" placeholder="Kies een code (bijv. rutger2026)"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                 padding:12px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;
+                 outline:none;text-align:center;width:100%">
+        <button onclick="confirmSetup()"
+          style="background:var(--solar-dim);border:1px solid rgba(240,201,58,0.3);color:var(--solar);
+                 padding:12px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:0.08em;
+                 text-transform:uppercase;cursor:pointer;font-family:'Syne',sans-serif;">
+          Start →
+        </button>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-top:16px;line-height:1.5">
+        De code is niet zichtbaar voor anderen maar beveiligt de app niet.<br>Kies iets wat je onthoudt.
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('setup-code').focus(), 100);
+  document.getElementById('setup-code').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmSetup();
+  });
+}
+
+async function confirmSetup() {
+  const code = document.getElementById('setup-code').value.trim();
+  if (!code || code.length < 3) { alert('Voer een code in van minimaal 3 tekens'); return; }
+  USER_CODE = code;
+  localStorage.setItem('energie_user_code', USER_CODE);
+  document.getElementById('setup-overlay').remove();
+  await initApp();
+}
+
+// ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
 
-updateMonthLabel();
-setupDrop('dz-hw', handleHWFile);
-setupDrop('dz-hm', handleHMFile);
-renderDashboard();
+async function initApp() {
+  setStatus('warn', 'Data laden…');
+  await loadAllData();
+  updateMonthLabel();
+  setupDrop('dz-hw', handleHWFile);
+  setupDrop('dz-hm', handleHMFile);
+  renderDashboard();
+}
 
-// PWA Service Worker via sw.js (must exist as separate file next to index.html)
+// Start
+updateMonthLabel();
+if (!USER_CODE) {
+  showSetupScreen();
+} else {
+  initApp();
+}
+
+// PWA Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }

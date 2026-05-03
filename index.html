@@ -6,7 +6,43 @@
 <meta name="theme-color" content="#0a0e0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Energie">
+<meta name="application-name" content="Energie Inzicht">
 <title>Energie Inzicht</title>
+<script>
+// Inject PWA manifest dynamically
+const manifest = {
+  name: "Energie Inzicht",
+  short_name: "Energie",
+  description: "Analyse van je zonnepanelen, batterij en energieverbruik",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0a0e0f",
+  theme_color: "#0a0e0f",
+  orientation: "any",
+  icons: [
+    {
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230a0e0f'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E",
+      sizes: "192x192",
+      type: "image/svg+xml",
+      purpose: "any maskable"
+    },
+    {
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230a0e0f'/%3E%3Ctext x='256' y='340' font-size='260' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E",
+      sizes: "512x512",
+      type: "image/svg+xml",
+      purpose: "any maskable"
+    }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const manifestUrl = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestUrl;
+document.currentScript.insertAdjacentElement('afterend', link);
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1845,21 +1881,9 @@ setupDrop('dz-hw', handleHWFile);
 setupDrop('dz-hm', handleHMFile);
 renderDashboard();
 
-// PWA Service Worker (inline, registered as blob)
+// PWA Service Worker via sw.js (must exist as separate file next to index.html)
 if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'energie-v1';
-    const ASSETS = [self.location.href];
-    self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-    });
-    self.addEventListener('fetch', e => {
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-    });
-  `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(() => {});
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 </script>
 </body>

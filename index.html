@@ -965,16 +965,23 @@ body {
           <div class="fin-val pos" id="fin-ontvangen">— €</div>
         </div>
         <div class="fin-row">
-          <div class="fin-label">Bespaard direct zonverbruik</div>
-          <div class="fin-val pos" id="fin-bespaard-direct">— €</div>
-        </div>
-        <div class="fin-row">
-          <div class="fin-label">Bespaard via batterij</div>
-          <div class="fin-val pos" id="fin-bespaard-bat">— €</div>
+          <div class="fin-label">Bespaard eigen verbruik</div>
+          <div class="fin-val pos" id="fin-bespaard-totaal">— €</div>
         </div>
         <div class="fin-row total">
           <div class="fin-label" style="color:var(--text);font-weight:700">Netto voordeel</div>
           <div class="fin-val total" id="fin-netto">€ —</div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em">Indicatieve uitsplitsing ⓘ</div>
+          <div class="fin-row" style="padding:5px 0;border:none">
+            <div class="fin-label" style="font-size:10px;color:var(--text-dim)">↳ Direct zonverbruik</div>
+            <div class="fin-val pos" id="fin-bespaard-direct" style="font-size:11px;opacity:0.7">— €</div>
+          </div>
+          <div class="fin-row" style="padding:5px 0;border:none">
+            <div class="fin-label" style="font-size:10px;color:var(--text-dim)">↳ Via batterij</div>
+            <div class="fin-val pos" id="fin-bespaard-bat" style="font-size:11px;opacity:0.7">— €</div>
+          </div>
         </div>
       </div>
 
@@ -987,9 +994,9 @@ body {
     <div class="settings-card">
       <div class="settings-section-title">Toelichting berekening</div>
       <div class="settings-note">
-        Bespaard direct zonverbruik = directe eigen verbruik (opwek − teruglevering − batterijlading) × gemiddeld inkoop-tarief.<br><br>
-        Bespaard via batterij = ontladen kWh × gemiddeld inkoop-tarief.<br><br>
-        Gemiddeld inkoop-tarief wordt berekend als: betaald ÷ ingekochte kWh van het net. Als ANWB-bedragen ontbreken, wordt dit veld niet getoond.
+        <strong style="color:var(--text)">Netto voordeel</strong> is exact: ontvangen teruglevering + bespaard eigen verbruik − betaald aan net.<br><br>
+        <strong style="color:var(--text)">Bespaard eigen verbruik</strong> = (direct zonverbruik + batterij ontladen) × gemiddeld inkoop-tarief. Dit getal is betrouwbaar als totaal.<br><br>
+        <strong style="color:var(--text-dim)">Indicatieve uitsplitsing</strong> (direct zon vs batterij) is een schatting. De P1-meter meet niet of ontladen batterijstroom naar het huis of naar het net gaat — die verdeling kan niet exact worden bepaald.
       </div>
     </div>
 
@@ -1486,12 +1493,22 @@ function calcMonth(ym) {
   let bespaardDirect = null;
   let bespaardBat = null;
   let nettoVoordeel = null;
+  let bespaardTotaal = null;
 
   if (anwbBetaald !== null && inkoop > 0) {
-    gemTarief = inkoop > 0 ? anwbBetaald / inkoop : 0;
+    gemTarief = anwbBetaald / inkoop;
+
+    // Totale besparing = wat je daadwerkelijk hebt ontvangen + betaald verschil
+    // Netto voordeel = ontvangen teruglevering − betaald aan net + bespaard eigen verbruik
+    // Bespaard eigen verbruik = totaal eigen verbruik zonder net × gemTarief
+    // = (directEigen + ontladen) × gemTarief
+    const eigenVerbruikBespaard = round2((directEigen + ontladen) * gemTarief);
+    nettoVoordeel = round2(-anwbBetaald + (anwbOntvangen||0) + eigenVerbruikBespaard);
+    bespaardTotaal = round2(eigenVerbruikBespaard + (anwbOntvangen||0));
+
+    // Indicatieve uitsplitsing (kan niet exact worden bepaald)
     bespaardDirect = round2(directEigen * gemTarief);
     bespaardBat    = round2(ontladen * gemTarief);
-    nettoVoordeel  = round2(-anwbBetaald + (anwbOntvangen||0) + bespaardDirect + bespaardBat);
   }
 
   return {
@@ -1500,7 +1517,7 @@ function calcMonth(ym) {
     totaalVerbruik: round2(totaalVerbruik),
     eigenPct, batRendement,
     anwbBetaald, anwbOntvangen,
-    gemTarief, bespaardDirect, bespaardBat, nettoVoordeel,
+    gemTarief, bespaardDirect, bespaardBat, bespaardTotaal, nettoVoordeel,
     hasHW: !!d.hw, hasHM: !!d.hm, hasMarstek: !!d.marstek, hasANWB: !!d.anwb,
   };
 }
@@ -1854,11 +1871,12 @@ function renderProjectie(data) {
 function renderFinancieel() {
   const c = calcMonth(currentMonth);
 
-  setText('fin-betaald',       c?.anwbBetaald   !== null ? `− € ${c.anwbBetaald}` : '—');
-  setText('fin-ontvangen',     c?.anwbOntvangen !== null ? `+ € ${c.anwbOntvangen}` : '—');
+  setText('fin-betaald',         c?.anwbBetaald    !== null ? `− € ${c.anwbBetaald}` : '—');
+  setText('fin-ontvangen',       c?.anwbOntvangen  !== null ? `+ € ${c.anwbOntvangen}` : '—');
+  setText('fin-bespaard-totaal', c?.bespaardTotaal !== null ? `+ € ${c.bespaardTotaal}` : '—');
   setText('fin-bespaard-direct', c?.bespaardDirect !== null ? `+ € ${c.bespaardDirect}` : '—');
-  setText('fin-bespaard-bat',  c?.bespaardBat    !== null ? `+ € ${c.bespaardBat}` : '—');
-  setText('fin-netto',         c?.nettoVoordeel  !== null ? `€ ${c.nettoVoordeel}` : '€ —');
+  setText('fin-bespaard-bat',    c?.bespaardBat    !== null ? `+ € ${c.bespaardBat}` : '—');
+  setText('fin-netto',           c?.nettoVoordeel  !== null ? `€ ${c.nettoVoordeel}` : '€ —');
 
   // Render cumulatief chart
   const data = allCalcs();

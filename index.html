@@ -43,7 +43,7 @@ link.rel = 'manifest';
 link.href = manifestUrl;
 document.currentScript.insertAdjacentElement('afterend', link);
 </script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #0a0e0f;
@@ -261,10 +261,15 @@ body {
   font-family: 'DM Mono', monospace;
 }
 .kpi-value {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1;
   margin-bottom: 4px;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+@media (max-width: 700px) {
+  .kpi-value { font-size: 18px; }
 }
 .kpi.solar .kpi-value { color: var(--solar); }
 .kpi.grid .kpi-value { color: var(--grid); }
@@ -309,14 +314,14 @@ body {
 }
 
 .ef-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.ef-val { font-size: 16px; font-weight: 700; font-family: 'DM Mono', monospace; }
+.ef-val { font-size: 15px; font-weight: 600; font-family: 'Outfit', sans-serif; letter-spacing: -0.01em; }
 .ef-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'DM Mono', monospace; }
-.ef-op { font-size: 18px; color: var(--border2); font-weight: 300; }
+.ef-op { font-size: 16px; color: var(--border2); font-weight: 300; }
 
 .eigen-progress-block { flex: 1; min-width: 200px; max-width: 300px; }
 .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .progress-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
-.progress-pct { font-size: 28px; font-weight: 800; color: var(--solar); font-family: 'DM Mono', monospace; }
+.progress-pct { font-size: 24px; font-weight: 700; color: var(--solar); font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
 
 .progress-track {
   height: 8px;
@@ -399,11 +404,11 @@ body {
 
 .tv-invested { display: flex; flex-direction: column; gap: 3px; }
 .tv-invested-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; }
-.tv-invested-val { font-size: 22px; font-weight: 800; color: var(--text); font-family: 'DM Mono', monospace; }
+.tv-invested-val { font-size: 20px; font-weight: 700; color: var(--text); font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
 .tv-invested-sub { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
 
 .tv-countdown { text-align: right; }
-.tv-countdown-big { font-size: 28px; font-weight: 800; color: var(--battery); font-family: 'DM Mono', monospace; }
+.tv-countdown-big { font-size: 24px; font-weight: 700; color: var(--battery); font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
 .tv-countdown-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
 
 .tv-track {
@@ -440,7 +445,7 @@ body {
 
 .tv-item { display: flex; flex-direction: column; gap: 2px; }
 .tv-item-label { font-size: 9px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
-.tv-item-val { font-size: 14px; font-weight: 700; font-family: 'DM Mono', monospace; }
+.tv-item-val { font-size: 14px; font-weight: 600; font-family: 'Outfit', sans-serif; letter-spacing: -0.01em; }
 
 /* ─── FIN CARD ─── */
 .fin-card {
@@ -462,10 +467,10 @@ body {
 .fin-row.total { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--solar); border-bottom: none; }
 
 .fin-label { font-size: 12px; color: var(--text-mid); font-family: 'DM Mono', monospace; }
-.fin-val { font-size: 13px; font-weight: 700; font-family: 'DM Mono', monospace; }
+.fin-val { font-size: 13px; font-weight: 600; font-family: 'Outfit', sans-serif; }
 .fin-val.pos { color: var(--battery); }
 .fin-val.neg { color: var(--return); }
-.fin-val.total { font-size: 18px; color: var(--battery); }
+.fin-val.total { font-size: 20px; color: var(--battery); letter-spacing: -0.02em; }
 
 /* ─── PROJECTIE CARD ─── */
 .proj-card {
@@ -492,7 +497,7 @@ body {
   gap: 4px;
 }
 .proj-label { font-size: 9px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
-.proj-val { font-size: 18px; font-weight: 800; font-family: 'DM Mono', monospace; }
+.proj-val { font-size: 18px; font-weight: 700; font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
 .proj-sub { font-size: 9px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
 
 /* ─── IMPORT VIEW ─── */
@@ -652,7 +657,7 @@ body {
 .rendement-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; min-width: 60px; }
 .rendement-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 99px; border: 1px solid var(--border); overflow: hidden; }
 .rendement-fill { height: 100%; border-radius: 99px; background: var(--battery); transition: width 0.5s ease; }
-.rendement-pct { font-size: 13px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--battery); min-width: 40px; text-align: right; }
+.rendement-pct { font-size: 13px; font-weight: 600; font-family: 'Outfit', sans-serif; color: var(--battery); min-width: 40px; text-align: right; }
 
 /* ─── SEIZOEN ─── */
 .seizoen-grid {

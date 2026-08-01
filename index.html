@@ -1108,7 +1108,7 @@ body {
       <div class="import-card">
         <div class="import-card-header">
           <div class="import-card-title">☀️ Hoymiles S-Miles</div>
-          <div class="import-card-sub">CSV export · maandelijkse opwek</div>
+          <div class="import-card-sub">CSV import of handmatig invoeren</div>
         </div>
         <div class="dropzone" id="dz-hm" onclick="document.getElementById('file-hm').click()">
           <div class="dropzone-icon">📁</div>
@@ -1116,6 +1116,18 @@ body {
           <div class="dropzone-sub">global.hoymiles.com → Rapport → Maand → Download CSV</div>
           <input type="file" id="file-hm" accept=".csv" onchange="handleHMFile(this)">
         </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace">of handmatig</div>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label>Maandelijkse opwek (kWh) — uit S-Miles app</label>
+            <input type="number" step="0.01" id="hoymiles-opwek" placeholder="bijv. 433.64">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveHoymilesManual()">Opslaan</button>
         <div class="import-result" id="hm-result"></div>
       </div>
 
@@ -1522,6 +1534,14 @@ function handleHMFile(input) {
   reader.readAsText(file);
 }
 
+async function saveHoymilesManual() {
+  const opwek = parseFloat(document.getElementById('hoymiles-opwek').value);
+  if (isNaN(opwek) || opwek <= 0) { toast('Voer een geldig getal in'); return; }
+  await setMonthData(currentMonth, { hm: { opwek: round2(opwek) } });
+  showResult('hm-result', `✓ Opwek: ${opwek} kWh`);
+  toast('Hoymiles data opgeslagen ☁');
+}
+
 async function saveMarstek() {
   const geladen  = parseFloat(document.getElementById('marstek-geladen').value);
   const ontladen = parseFloat(document.getElementById('marstek-ontladen').value);
@@ -1555,6 +1575,9 @@ async function saveInstellingen() {
 
 function renderImportView() {
   const d = getMonthData(currentMonth);
+  if (d.hm) {
+    document.getElementById('hoymiles-opwek').value = d.hm.opwek;
+  }
   if (d.marstek) {
     document.getElementById('marstek-geladen').value  = d.marstek.geladen;
     document.getElementById('marstek-ontladen').value = d.marstek.ontladen;

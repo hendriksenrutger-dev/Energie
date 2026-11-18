@@ -1240,19 +1240,69 @@ body {
 const SUPABASE_URL = 'https://kegpsbtlfnqxrwiaeovc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlZ3BzYnRsZm5xeHJ3aWFlb3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MjY0MzEsImV4cCI6MjA5MjEwMjQzMX0.fIPhKYNaA8B1if5l3iPE7eXzSyR5gdO9c8GHtNOA6co';
 
-function sbHeaders() {
+// ── Inloggen: dezelfde login als Cucina en Boodschappen ──
+// De drie apps staan op hetzelfde adres en delen de sessie in localStorage.
+const SESSION_KEY = 'cucina_session';
+
+function leesSessie() {
+  try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return s && s.access_token ? s : null; }
+  catch { return null; }
+}
+
+let verversBezig = null;
+async function geldigToken() {
+  const s = leesSessie();
+  if (!s) throw new Error('nologin');
+  const exp = s.expires_at > 1e11 ? s.expires_at : s.expires_at * 1000;   // Cucina: milliseconden
+  if (exp > Date.now() + 60000 || !s.refresh_token) return s.access_token;
+  if (verversBezig) return verversBezig;
+  const oud = s.refresh_token;
+  verversBezig = (async () => {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: oud })
+      });
+      const d = await r.json();
+      if (!d.access_token) {
+        const nu = leesSessie();                      // misschien heeft een andere app net ververst
+        if (nu && nu.refresh_token !== oud) return nu.access_token;
+        if (r.status === 400 || r.status === 401) throw new Error('nologin');
+        return s.access_token;
+      }
+      Object.assign(s, { access_token: d.access_token, refresh_token: d.refresh_token || oud,
+                         expires_at: Date.now() + (d.expires_in || 3600) * 1000 });
+      localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+      return d.access_token;
+    } catch (e) {
+      if (e.message === 'nologin') throw e;
+      return s.access_token;                          // offline: oude token proberen
+    } finally { verversBezig = null; }
+  })();
+  return verversBezig;
+}
+
+async function sbHeaders() {
+  let tk;
+  try { tk = await geldigToken(); }
+  catch (e) { showLoginScreen(); throw e; }
   return {
     'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Authorization': `Bearer ${tk}`,
     'Content-Type': 'application/json'
   };
+}
+
+async function sbAntwoord(r) {
+  if (r.status === 401) { showLoginScreen(); throw new Error('Inloggen verlopen'); }
+  if (!r.ok) throw new Error(await r.text());
 }
 
 async function sbFetch(table, filters = {}) {
   let url = `${SUPABASE_URL}/rest/v1/${table}?select=*`;
   Object.entries(filters).forEach(([k, v]) => { url += `&${k}=eq.${encodeURIComponent(v)}`; });
-  const r = await fetch(url, { headers: sbHeaders() });
-  if (!r.ok) throw new Error(await r.text());
+  const r = await fetch(url, { headers: await sbHeaders() });
+  await sbAntwoord(r);
   return r.json();
 }
 
@@ -1261,10 +1311,10 @@ async function sbUpsertMonth(ym, data) {
   const url = `${SUPABASE_URL}/rest/v1/energie_maanden?on_conflict=user_code,maand`;
   const r = await fetch(url, {
     method: 'POST',
-    headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    headers: { ...(await sbHeaders()), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ user_code: USER_CODE, maand: ym, data })
   });
-  if (!r.ok) throw new Error(await r.text());
+  await sbAntwoord(r);
 }
 
 async function sbUpsertSettings(data) {
@@ -1272,10 +1322,10 @@ async function sbUpsertSettings(data) {
   const url = `${SUPABASE_URL}/rest/v1/energie_instellingen?on_conflict=user_code`;
   const r = await fetch(url, {
     method: 'POST',
-    headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    headers: { ...(await sbHeaders()), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ user_code: USER_CODE, data })
   });
-  if (!r.ok) throw new Error(await r.text());
+  await sbAntwoord(r);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2181,6 +2231,67 @@ function exportData() {
 }
 
 // ═══════════════════════════════════════════════════════
+// INLOGSCHERM (alleen als je nog niet in Cucina of Boodschappen bent ingelogd)
+// ═══════════════════════════════════════════════════════
+
+function showLoginScreen() {
+  if (document.getElementById('login-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'login-overlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:var(--bg);z-index:10000;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  `;
+  const veld = `background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:12px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;width:100%`;
+  overlay.innerHTML = `
+    <form id="login-form" style="max-width:360px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:16px">⚡</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:8px">Energie Inzicht</div>
+      <div style="font-size:12px;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:24px;line-height:1.6">
+        Log in met je account van Cucina en Boodschappen.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input id="login-email" type="email" autocomplete="username" placeholder="E-mail" required style="${veld}">
+        <input id="login-ww" type="password" autocomplete="current-password" placeholder="Wachtwoord" required style="${veld}">
+        <button type="submit" id="login-knop"
+          style="background:var(--solar-dim);border:1px solid rgba(240,201,58,0.3);color:var(--solar);
+                 padding:12px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:0.08em;
+                 text-transform:uppercase;cursor:pointer;font-family:'Syne',sans-serif;">
+          Inloggen →
+        </button>
+        <div id="login-fout" style="display:none;font-size:12px;color:var(--return);font-family:'DM Mono',monospace"></div>
+      </div>
+    </form>
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('login-email').focus(), 100);
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const knop = document.getElementById('login-knop'), fout = document.getElementById('login-fout');
+    knop.disabled = true; knop.textContent = 'Bezig…'; fout.style.display = 'none';
+    try {
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: document.getElementById('login-email').value.trim(),
+                               password: document.getElementById('login-ww').value })
+      });
+      const d = await r.json();
+      if (!r.ok || !d.access_token) throw new Error('Inloggen mislukt. Controleer je e-mail en wachtwoord.');
+      // Zelfde vorm als Cucina, zodat de andere apps je ook als ingelogd zien
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ access_token: d.access_token, refresh_token: d.refresh_token,
+                                                         expires_at: Date.now() + (d.expires_in || 3600) * 1000 }));
+      overlay.remove();
+      start();
+    } catch (err) {
+      fout.textContent = /fetch|network/i.test(err.message) ? 'Geen verbinding.' : err.message;
+      fout.style.display = 'block';
+      knop.disabled = false; knop.textContent = 'Inloggen →';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
 // SETUP SCHERM (eerste gebruik / nieuw apparaat)
 // ═══════════════════════════════════════════════════════
 
@@ -2245,13 +2356,17 @@ async function initApp() {
   renderDashboard();
 }
 
-// Start
-updateMonthLabel();
-if (!USER_CODE) {
-  showSetupScreen();
-} else {
-  initApp();
+// Start: eerst inloggen (of de login van Cucina/Boodschappen gebruiken), dan je code
+function start() {
+  if (!leesSessie()) { showLoginScreen(); return; }
+  if (!USER_CODE) {
+    if (!document.getElementById('setup-overlay')) showSetupScreen();
+  } else {
+    initApp();
+  }
 }
+updateMonthLabel();
+start();
 
 // PWA Service Worker
 if ('serviceWorker' in navigator) {
